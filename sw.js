@@ -12,6 +12,7 @@ self.addEventListener('activate', function (e) {
 });
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  if (e.request.cache === 'no-store') return; // update checks always go to the network
   e.respondWith(caches.match(e.request).then(function (hit) {
     if (hit) return hit;
     return fetch(e.request).then(function (res) {
