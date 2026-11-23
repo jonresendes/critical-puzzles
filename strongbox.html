@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15131d">
+<title>Strongbox · Critical Puzzles</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --stage: #15131d; --stage-lift: #2e2945; --panel: #1d1a28; --ink: #efecf7; --muted: #a8a2bd;
+  --line: rgba(239, 236, 247, 0.2); --tile: rgba(239, 236, 247, 0.07); --accent: #ea4fae;
+  --amber: #f0b03a; --good: #5fd0a0; --stone: #6c6880;
+  --display: "Unbounded", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+/* Piece materials: a = body, b = shade, c = highlight, alt = the opposing piece */
+#app[data-mat="wood"] { --m-a: #d2a469; --m-b: #94632f; --m-c: #efd0a0; --m-alt: #6b4423; --m-ink: #2c1a09; }
+#app[data-mat="plastic"] { --m-a: #ea4fae; --m-b: #a92c7c; --m-c: #f79bd3; --m-alt: #23b5a4; --m-ink: #2a0a1d; }
+#app[data-mat="metal"] { --m-a: #b9c1ce; --m-b: #6f7888; --m-c: #f1f4f8; --m-alt: #c9973f; --m-ink: #1b1f27; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--stage); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.4;
+  overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+[hidden] { display: none !important; }
+#app { position: relative; height: 100%; overflow: hidden; }
+button, .btn {
+  font: 600 14px/1 var(--body); letter-spacing: 0.02em; color: var(--ink); background: var(--tile);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; cursor: pointer; text-decoration: none;
+  display: inline-block;
+}
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, input:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: #1b0b16; border-color: transparent; }
+.label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+/* Ambient backgrounds: dim and slow so they never compete with the puzzle */
+#bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  background: radial-gradient(ellipse 70% 60% at 50% 34%, var(--stage-lift), var(--stage) 72%); }
+#bg::before { content: ""; position: absolute; inset: -20%; }
+#app[data-bg="forest"] #bg { background: linear-gradient(#10221b, #152a1e 55%, #0c1712); }
+#app[data-bg="forest"] #bg::before { background: radial-gradient(circle at 30% 22%, rgba(130, 200, 130, 0.13), transparent 38%),
+  radial-gradient(circle at 74% 62%, rgba(90, 160, 110, 0.1), transparent 44%); animation: drift 38s ease-in-out infinite alternate; }
+#app[data-bg="space"] #bg { background: radial-gradient(ellipse at 70% 20%, #1b1838, #08070f 70%); }
+#app[data-bg="space"] #bg::before { background-image: radial-gradient(1.2px 1.2px at 22px 34px, rgba(255, 255, 255, 0.7), transparent 60%),
+  radial-gradient(1px 1px at 120px 90px, rgba(255, 255, 255, 0.5), transparent 60%), radial-gradient(1.4px 1.4px at 170px 160px, rgba(200, 210, 255, 0.6), transparent 60%),
+  radial-gradient(1px 1px at 70px 180px, rgba(255, 255, 255, 0.4), transparent 60%); background-size: 210px 230px; animation: drift 140s linear infinite alternate; }
+#app[data-bg="ocean"] #bg { background: linear-gradient(#0d3247, #082033 55%, #050f1a); }
+#app[data-bg="ocean"] #bg::before { background: repeating-linear-gradient(104deg, rgba(130, 205, 235, 0.055) 0 46px, transparent 46px 150px); animation: drift 26s ease-in-out infinite alternate; }
+#app[data-bg="beach"] #bg { background: linear-gradient(#2a2440 0%, #44374f 30%, #1c5257 52%, #17393f 68%, #3d3527 82%, #2a241b 100%); }
+#app[data-bg="beach"] #bg::before { inset: 60% -20% auto -20%; height: 16%; border-radius: 50%; background: rgba(200, 235, 235, 0.09); animation: wave 9s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translate(5%, 4%); } }
+@keyframes wave { to { transform: translateY(26px) scaleX(1.05); } }
+@media (prefers-reduced-motion: reduce) { #bg::before { animation: none !important; } }
+
+/* Setup */
+#setup {
+  position: absolute; inset: 0; overflow-y: auto; padding: calc(18px + var(--safe-t)) 20px calc(20px + var(--safe-b));
+  display: flex; flex-direction: column; gap: 16px;
+}
+#app:not([data-screen="setup"]) #setup { display: none; }
+#setup h1 { margin: 6px 0 0; font-family: var(--display); font-weight: 700; text-transform: uppercase;
+  font-size: clamp(28px, 8vw, 52px); line-height: 1; }
+#setup h1 span { display: block; color: var(--accent); }
+#setup .lede { margin: 0; color: var(--muted); max-width: 44ch; }
+.group { max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { padding: 10px 13px; border-radius: 999px; font-size: 13px; }
+.chips button[aria-pressed="true"] { background: var(--ink); color: #15131d; border-color: transparent; }
+.hint { margin: 0; color: var(--muted); font-size: 13px; max-width: 48ch; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* Play */
+#play { position: absolute; inset: 0; overflow-y: auto; padding: calc(10px + var(--safe-t)) 12px calc(24px + var(--safe-b)); }
+#app[data-screen="setup"] #play { display: none; }
+#hud { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 620px; margin: 0 auto; }
+#hud button { padding: 10px 12px; font-size: 13px; background: rgba(29, 26, 40, 0.85); }
+#stats { display: flex; gap: 14px; margin: 0 0 0 auto; padding: 8px 12px; border-radius: 12px; background: rgba(29, 26, 40, 0.85);
+  border: 1px solid var(--line); }
+#stats div { display: flex; flex-direction: column; align-items: center; }
+#stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+#bench { max-width: 620px; margin: 14px auto 0; display: flex; flex-direction: column; gap: 12px; }
+#box { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; padding: 16px; border-radius: 18px;
+  background: linear-gradient(160deg, var(--m-c), var(--m-a) 38%, var(--m-b)); color: var(--m-ink); border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -8px 16px rgba(0, 0, 0, 0.22), 0 12px 30px rgba(0, 0, 0, 0.45); }
+#box .dial { flex: none; width: 54px; height: 54px; border-radius: 50%; background: #15131d; border: 3px solid rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 0 0 5px #2b2738; position: relative; }
+#box .dial::after { content: ""; position: absolute; left: 50%; top: 9px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px; background: var(--amber); }
+#box .bt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+#box .bname { font-family: var(--display); font-weight: 700; font-size: 16px; text-transform: uppercase; }
+#box .bsub { font-size: 13px; font-weight: 500; line-height: 1.3; letter-spacing: 0; }
+#lights { display: flex; gap: 6px; flex-wrap: wrap; }
+#lights i { width: 12px; height: 12px; border-radius: 50%; background: var(--amber); border: 1.5px solid rgba(0, 0, 0, 0.55); }
+#lights i.open { background: var(--good); }
+#lights i.jammed { background: var(--stone); }
+#tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 560px) { #tiles { grid-template-columns: repeat(3, 1fr); } }
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; padding: 14px; border-radius: 16px;
+  background: rgba(29, 26, 40, 0.86); min-height: 104px; line-height: 1.25; }
+.tile .tk { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); }
+.tile .tn { font-family: var(--display); font-weight: 500; font-size: 14px; }
+.tile .ts { font-size: 12.5px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.tile.open { border-color: var(--good); } .tile.open .tk { color: var(--good); }
+.tile.jammed { background: rgba(60, 58, 72, 0.7); } .tile.jammed .tk, .tile.jammed .tn { color: var(--stone); }
+#status { max-width: 620px; margin: 4px auto 0; text-align: center; color: var(--muted); font-size: 13.5px; }
+
+#shade { position: absolute; inset: 0; background: rgba(8, 7, 12, 0.6); z-index: 4; }
+.card { position: absolute; left: 10px; right: 10px; top: calc(14px + var(--safe-t)); margin: 0 auto; max-width: 520px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; z-index: 5;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); max-height: calc(100% - 28px - var(--safe-t) - var(--safe-b)); overflow-y: auto; }
+.card h2 { margin: 2px 0 6px; font-family: var(--display); font-weight: 500; font-size: 16px; }
+.card p { margin: 6px 0; }
+.kicker { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); margin: 0; }
+#p-prompt { font-size: 16.5px; line-height: 1.45; white-space: pre-line; -webkit-user-select: text; user-select: text; }
+#p-stage { margin: 10px 0 4px; }
+#p-stage svg { display: block; width: 100%; height: auto; max-height: 46vh; touch-action: manipulation; }
+.cluebox { border-left: 3px solid var(--good); padding: 8px 10px; background: var(--tile); border-radius: 0 10px 10px 0; font-size: 14px;
+  -webkit-user-select: text; user-select: text; }
+.cluebox b { color: var(--good); font-weight: 600; }
+#answer { width: 100%; font: 500 17px var(--body); color: var(--ink); background: #110f18; border: 1px solid var(--line);
+  border-radius: 12px; padding: 13px 14px; margin-top: 8px; -webkit-user-select: text; user-select: text; }
+#feedback, #l-feedback { min-height: 1.4em; font-size: 14px; color: var(--amber); }
+.small { font-size: 13px; color: var(--muted); }
+
+/* Toothpicks */
+.stick { cursor: pointer; }
+.stick .hit { stroke: transparent; stroke-width: 30; stroke-linecap: round; }
+.stick .body { stroke: var(--m-a); stroke-width: 9; stroke-linecap: round; }
+.stick .edge { stroke: var(--m-b); stroke-width: 11; stroke-linecap: round; }
+.stick .shine { stroke: var(--m-c); stroke-width: 2.4; stroke-linecap: round; opacity: 0.85; }
+.stick.fixed { cursor: default; opacity: 0.6; }
+.stick.off .edge, .stick.off .shine { display: none; }
+.stick.off .body { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 7; opacity: 0; }
+svg.holding .stick.off .body { opacity: 0.5; }
+svg:not(.holding) .stick.off { pointer-events: none; }
+.stick.held .body { stroke: var(--accent); } .stick.held .edge { stroke: #fff; }
+
+/* Shape sums */
+.sums { display: flex; flex-direction: column; gap: 10px; align-items: center; font: 600 22px var(--body); }
+.sums .eqn { display: flex; align-items: center; gap: 8px; }
+.sums svg { width: 34px; height: 34px; max-height: none; }
+.sums .q { color: var(--amber); }
+
+/* Jugs */
+.jugs { display: flex; justify-content: center; gap: 18px; align-items: flex-end; }
+.jug { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.jug .glass { width: 92px; border: 3px solid var(--m-a); border-top: none; border-radius: 0 0 14px 14px; position: relative; overflow: hidden;
+  background: rgba(239, 236, 247, 0.05); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.jug .water { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(#58b9e6, #2c7fc2); transition: height 0.3s; }
+.jug .amt { font: 600 15px var(--body); font-variant-numeric: tabular-nums; }
+.jug .acts { display: flex; flex-direction: column; gap: 6px; width: 104px; }
+.jug .acts button { padding: 10px 6px; font-size: 13px; }
+
+/* Crossing stones */
+.pads { display: flex; gap: 5px; justify-content: center; padding: 14px 0 6px; }
+.pad { flex: 1 1 0; max-width: 52px; aspect-ratio: 1; border-radius: 12px; background: rgba(239, 236, 247, 0.06); border: 1px dashed var(--line);
+  display: flex; align-items: center; justify-content: center; padding: 0; }
+.pad.tok { border-style: solid; border-color: rgba(0, 0, 0, 0.4); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3), inset 0 -5px 8px rgba(0, 0, 0, 0.25); color: #fff; font-size: 15px; }
+.pad.L { background: radial-gradient(circle at 35% 30%, var(--m-c), var(--m-a) 45%, var(--m-b)); color: var(--m-ink); }
+.pad.R { background: radial-gradient(circle at 35% 30%, #fff5, var(--m-alt) 50%, #0006), var(--m-alt); }
+.pad.nope { animation: nope 0.3s; }
+@keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* The lock */
+#wheels { display: flex; justify-content: center; gap: 10px; margin: 12px 0 4px; padding: 14px 10px; border-radius: 16px;
+  background: linear-gradient(160deg, var(--m-c), var(--m-a) 40%, var(--m-b)); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -8px 14px rgba(0, 0, 0, 0.25); }
+.wheel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wheel button { padding: 8px 14px; font-size: 12px; background: rgba(0, 0, 0, 0.3); color: #fff; border-color: rgba(0, 0, 0, 0.3); }
+.wheel .win { width: 56px; height: 120px; overflow: hidden; position: relative; border-radius: 10px; background: #f4efe2; touch-action: none; cursor: grab;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.55); }
+.wheel .win::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0) 36%, rgba(0, 0, 0, 0) 64%, rgba(0, 0, 0, 0.72)); }
+.wheel .strip { position: absolute; left: 0; right: 0; top: -40px; }
+.wheel .strip span { display: block; height: 40px; line-height: 40px; text-align: center; font: 700 26px/40px var(--display); color: #1b1924; }
+#clues { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#clues li { padding: 8px 10px; background: var(--tile); border-radius: 10px; font-size: 14px; -webkit-user-select: text; user-select: text; }
+#clues li b { color: var(--good); margin-right: 6px; font-weight: 600; }
+#clues li.shut { color: var(--muted); } #clues li.shut b { color: var(--amber); }
+#clues li.lost { color: var(--stone); } #clues li.lost b { color: var(--stone); }
+#end .stars { font-size: 34px; letter-spacing: 6px; color: var(--amber); }
+#end dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 10px 0; }
+#end dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ----- Settings as case files: each category is a sealed file that opens one at a time ----- */
+.file { border: 1px solid var(--line); border-radius: 14px; background: rgba(29, 26, 40, 0.8); }
+.file > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer; border-radius: 14px; }
+.file > summary::-webkit-details-marker { display: none; }
+.file > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lock { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: #110f18; position: relative; transition: transform 0.35s, border-color 0.35s; }
+.lock::before, .lock::after { content: ""; position: absolute; left: 50%; background: var(--amber); transition: background 0.35s; }
+.lock::before { top: 7px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; }
+.lock::after { top: 12px; width: 4px; height: 10px; margin-left: -2px; border-radius: 0 0 2px 2px; }
+.file[open] .lock { transform: rotate(90deg); border-color: var(--good); }
+.file[open] .lock::before, .file[open] .lock::after { background: var(--good); }
+.ft { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kick { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.kick::after { content: " \00B7  sealed"; }
+.file[open] .kick::after { content: " \00B7  open"; color: var(--good); }
+.fname { font-family: var(--display); font-weight: 500; font-size: 14px; }
+.fdesc { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fbody { padding: 6px 14px 16px; display: flex; flex-direction: column; gap: 18px; animation: unseal 0.3s ease; }
+@keyframes unseal { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .fbody { animation: none; } .lock, .lock::before, .lock::after { transition: none; } }
+.files { max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+.files .hint { max-width: none; }
+</style>
+</head>
+<body>
+<div id="app" data-screen="setup" data-mat="wood" data-bg="study">
+  <div id="bg" aria-hidden="true"></div>
+
+  <section id="setup">
+    <div>
+      <a class="btn" href="index.html">&larr; Games</a>
+      <h1>Strong<span>box</span></h1>
+    </div>
+    <p class="lede">Numbers, words, logic, stories, pictures and pieces to move. Each puzzle you solve breaks a seal and earns a clue to the code. Then turn the wheels and open the box.</p>
+    <div class="files">
+<details class="file">
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 01</span><span class="fname">Difficulty</span><span class="fdesc" id="d-tier"></span></span></summary>
+<div class="fbody">
+    <div class="group">
+      <span class="label">Difficulty</span>
+      <div class="chips" id="tiers"></div>
+      <p class="hint" id="tier-blurb"></p>
+    </div>
+</div>
+</details>
+<details class="file">
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 02</span><span class="fname">The pieces</span><span class="fdesc" id="d-mat"></span></span></summary>
+<div class="fbody">
+    <div class="group">
+      <span class="label">Material</span>
+      <div class="chips" id="mats"></div>
+      <p class="hint">Sets the look of the strongbox, toothpicks, cubes and stones.</p>
+    </div>
+</div>
+</details>
+<details class="file">
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 03</span><span class="fname">The scene</span><span class="fdesc" id="d-bg"></span></span></summary>
+<div class="fbody">
+    <div class="group">
+      <span class="label">Background</span>
+      <div class="chips" id="bgs"></div>
+    </div>
+</div>
+</details>
+<details class="file">
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 04</span><span class="fname">The app</span><span class="fdesc">Version, updates and bug reports</span></span></summary>
+<div class="fbody">
+<div class="group">
+<p class="hint" id="upd-version"></p>
+<div class="row"><button id="upd-check" type="button">Check for update</button><button type="button" data-bug-open>&#128030; Report a bug</button></div>
+<p class="hint" id="upd-status" role="status" aria-live="polite"></p>
+</div>
+</div>
+</details>
+    </div>
+    <div class="group"><button id="start" class="primary" type="button">Open the case</button></div>
+  </section>
+
+  <section id="play">
+    <header id="hud">
+      <button id="to-setup" type="button">&larr; Setup</button>
+      <dl id="stats">
+        <div><dt class="label">Seals</dt><dd id="s-seals">0</dd></div>
+        <div><dt class="label">Wrong</dt><dd id="s-wrong">0</dd></div>
+        <div><dt class="label">Jammed</dt><dd id="s-jam">0</dd></div>
+      </dl>
+    </header>
+    <div id="bench">
+      <button id="box" type="button">
+        <span class="dial" aria-hidden="true"></span>
+        <span class="bt">
+          <span class="bname">The strongbox</span>
+          <span id="lights" aria-hidden="true"></span>
+          <span class="bsub" id="box-sub"></span>
+        </span>
+      </button>
+      <div id="tiles"></div>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <div id="shade" hidden></div>
+
+  <div id="panel" class="card" hidden role="dialog" aria-labelledby="p-title">
+    <p class="kicker" id="p-kick"></p>
+    <h2 id="p-title"></h2>
+    <p id="p-prompt"></p>
+    <div id="p-stage"></div>
+    <p id="p-clue" class="cluebox" hidden></p>
+    <form id="answer-form" autocomplete="off">
+      <input id="answer" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type your answer" aria-label="Your answer" maxlength="80">
+      <div class="row"><button id="submit" class="primary act" type="submit">Answer</button></div>
+    </form>
+    <div class="row" id="p-acts"></div>
+    <p id="feedback" role="status" aria-live="polite"></p>
+    <p id="tries" class="small"></p>
+    <div class="row"><button id="step-away" type="button">Step away</button></div>
+  </div>
+
+  <div id="lockp" class="card" hidden role="dialog" aria-labelledby="l-title">
+    <p class="kicker">The strongbox</p>
+    <h2 id="l-title">Set the code</h2>
+    <p class="small" id="l-note"></p>
+    <div id="wheels"></div>
+    <div class="row"><button id="latch" class="primary act" type="button">Pull the latch</button><button id="l-close" type="button">Step away</button></div>
+    <p id="l-feedback" role="status" aria-live="polite"></p>
+    <p id="l-tries" class="small"></p>
+    <span class="label">Clues</span>
+    <ul id="clues"></ul>
+  </div>
+
+  <div id="end" class="card" hidden role="dialog" aria-labelledby="end-title">
+    <h2 id="end-title"></h2>
+    <p class="stars" id="end-stars" aria-hidden="true"></p>
+    <p id="end-text"></p>
+    <dl id="end-stats"></dl>
+    <div class="row">
+      <button id="again" class="primary" type="button">New case</button>
+      <button id="end-setup" type="button">Change setup</button>
+    </div>
+  </div>
+</div>
+
+<script src="strongbox-data.js"></script>
+<script>
+(function () {
+'use strict';
+var $ = function (id) { return document.getElementById(id); };
+function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function load(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = ri(0, i), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+var NS = 'http://www.w3.org/2000/svg';
+function svg(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+/* ---------- Settings for each difficulty (tune here) ---------- */
+var TIERS = {
+  E: { name: 'Easy', mix: ['math', 'words', 'logic', 'story', 'visual', 'hands'], digits: 3, attempts: Infinity, lockTries: Infinity, typo: 6,
+       blurb: '6 seals and a 3-digit code. Unlimited tries, with a short lockout after a wrong answer.' },
+  M: { name: 'Medium', mix: ['math', 'words', 'logic', 'story', 'visual', 'hands', 'hands'], digits: 4, attempts: 3, lockTries: 3, typo: 8,
+       blurb: '7 seals and a 4-digit code. A seal jams after 3 wrong answers and its clue is lost. The latch jams after 3 wrong codes.' },
+  H: { name: 'Hard', mix: ['math', 'words', 'logic', 'story', 'visual', 'visual', 'hands', 'hands'], digits: 4, attempts: 2, lockTries: 2, typo: 0,
+       blurb: '8 seals and a 4-digit code. A seal jams after 2 wrong answers. The latch gives you 2 pulls. Spelling must be exact.' }
+};
+var LOCKOUT_MS = 5000;
+var MATS = [['wood', 'Wood'], ['plastic', 'Plastic'], ['metal', 'Metal']];
+var BGS = [['study', 'Study'], ['forest', 'Forest'], ['space', 'Outer space'], ['ocean', 'Under the ocean'], ['beach', 'Beach']];
+var CATNAME = { math: 'Numbers', words: 'Words', logic: 'Logic', story: 'Story' };
+var KINDNAME = { cubes: 'Cube stack', shapes: 'Shape sums', squares: 'Hidden shapes', picks: 'Toothpicks', jugs: 'Two jugs', hops: 'Crossing stones' };
+
+var S = load('cp-sb-settings') || {};
+if (!TIERS[S.tier]) S.tier = 'E';
+if (!MATS.some(function (m) { return m[0] === S.mat; })) S.mat = 'wood';
+if (!BGS.some(function (m) { return m[0] === S.bg; })) S.bg = 'study';
+var app = $('app'), run = null, cur = null, ticker = null;
+
+function chips(box, items, key, after) {
+  box.textContent = '';
+  items.forEach(function (it) {
+    var b = el('button', '', it[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(S[key] === it[0]));
+    b.addEventListener('click', function () { S[key] = it[0]; store('cp-sb-settings', S); paintSetup(); });
+    box.appendChild(b);
+  });
+  if (after) after();
+}
+function paintSetup() {
+  chips($('tiers'), Object.keys(TIERS).map(function (k) { return [k, TIERS[k].name]; }), 'tier');
+  chips($('mats'), MATS, 'mat'); chips($('bgs'), BGS, 'bg');
+  $('tier-blurb').textContent = TIERS[S.tier].blurb;
+  $('d-tier').textContent = TIERS[S.tier].name;
+  $('d-mat').textContent = MATS.filter(function (m) { return m[0] === S.mat; })[0][1];
+  $('d-bg').textContent = BGS.filter(function (m) { return m[0] === S.bg; })[0][1];
+  app.dataset.mat = S.mat; app.dataset.bg = S.bg;
+}
+
+/* ---------- Answer checking (same conventions as Riddle Maze) ---------- */
+var NUMW = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13,
+  fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60,
+  seventy: 70, eighty: 80, ninety: 90 };
+function norm(s) {
+  return String(s).toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/^(a|an|the|your|its|it is|he is|she is) /, '');
+}
+function numbersIn(n) {
+  var out = [], acc = null;
+  n.split(' ').forEach(function (w) {
+    if (/^\d+$/.test(w)) { if (acc != null) { out.push(acc); acc = null; } out.push(+w); }
+    else if (w in NUMW) acc = (acc || 0) + NUMW[w];
+    else if (w === 'hundred' && acc != null) acc *= 100;
+    else if (w !== 'and' && acc != null) { out.push(acc); acc = null; }
+  });
+  if (acc != null) out.push(acc);
+  return out;
+}
+function lev1(a, b) { // true if a and b differ by at most one edit
+  if (Math.abs(a.length - b.length) > 1) return false;
+  var i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+function isRight(item, input, typo) {
+  var n = norm(input), c = n.replace(/ /g, '');
+  if (!c) return false;
+  var ok = item.a.some(function (ans) {
+    var an = norm(ans), ac = an.replace(/ /g, '');
+    if (c === ac) return true;
+    if (/^\d+$/.test(ac)) { var ns = numbersIn(n); return ns.length === 1 && ns[0] === +ac; }
+    return typo && ac.length >= typo && lev1(c, ac);
+  });
+  return ok || (item.kw || []).some(function (k) { return c.indexOf(norm(k).replace(/ /g, '')) > -1; });
+}
+
+/* ---------- Dealing typed puzzles: unsolved first, never repeated in a case ---------- */
+function deal(tier, cat) {
+  var solved = load('cp-sb-solved') || {};
+  var pool = window.CP_PUZZLES.filter(function (p) { return p.t === tier && p.c === cat; });
+  var fresh = pool.filter(function (p) { return !solved[p.id]; });
+  return pick(fresh.length ? fresh : pool);
+}
+function markSolved(id) { var s = load('cp-sb-solved') || {}; s[id] = 1; store('cp-sb-solved', s); }
+
+/* ---------- The code lock: clues are true statements that pin down one code ---------- */
+var COUNT = ['No', 'One', 'Two', 'Three', 'Four'];
+function makeLock(n, K) {
+  var cands = [];
+  (function rec(pre) { if (pre.length === n) { cands.push(pre); return; } for (var d = 0; d < 10; d++) if (pre.indexOf(d) < 0) rec(pre.concat(d)); })([]);
+  var code = pick(cands);
+  function fb(g, c) { var ex = 0, mis = 0; for (var i = 0; i < n; i++) { if (g[i] === c[i]) ex++; else if (c.indexOf(g[i]) > -1) mis++; } return ex * 10 + mis; }
+  function guessClue() {
+    for (;;) {
+      var g = pick(cands), f = fb(g, code), ex = Math.floor(f / 10), mis = f % 10;
+      if (ex >= n - 1) continue;
+      var parts = [];
+      if (ex) parts.push(COUNT[ex].toLowerCase() + (ex > 1 ? ' digits are' : ' digit is') + ' right and in the right place');
+      if (mis) parts.push(COUNT[mis].toLowerCase() + (ex ? ' more' : '') + (mis > 1 ? ' digits are' : ' digit is') + ' right but in the wrong place');
+      var text = g.join(' ') + ': ' + (parts.length ? parts.join(', and ') : 'none of these digits is in the code') + '.';
+      return { text: text, test: (function (g, f) { return function (c) { return fb(g, c) === f; }; })(g, f) };
+    }
+  }
+  var sum = code.reduce(function (a, b) { return a + b; }, 0), evens = code.filter(function (d) { return d % 2 === 0; }).length, big = Math.max.apply(null, code);
+  var props = [
+    { text: 'The digits of the code add up to ' + sum + '.', test: function (c) { return c.reduce(function (a, b) { return a + b; }, 0) === sum; } },
+    { text: (evens ? COUNT[evens] + (evens > 1 ? ' of the digits are' : ' of the digits is') : 'None of the digits is') + ' even.', test: function (c) { return c.filter(function (d) { return d % 2 === 0; }).length === evens; } },
+    { text: 'The first digit is ' + (code[0] > code[n - 1] ? 'bigger' : 'smaller') + ' than the last.', test: function (c) { return (c[0] > c[n - 1]) === (code[0] > code[n - 1]); } },
+    { text: 'The biggest digit in the code is ' + big + '.', test: function (c) { return Math.max.apply(null, c) === big; } }
+  ];
+  var best = null;
+  for (var trial = 0; trial < 4000 && (trial < 300 || !best); trial++) {
+    var clues = shuffle(props.slice()).slice(0, K >= 7 ? 2 : 1);
+    while (clues.length < K) clues.push(guessClue());
+    var needed = clues.map(function () { return false; }), unique = true;
+    for (var ci = 0; ci < cands.length && unique; ci++) {
+      var c = cands[ci]; if (c === code) continue;
+      var viol = 0, vi = -1;
+      for (var i = 0; i < K && viol < 2; i++) if (!clues[i].test(c)) { viol++; vi = i; }
+      if (viol === 0) unique = false; else if (viol === 1) needed[vi] = true;
+    }
+    if (!unique) continue;
+    var score = needed.filter(Boolean).length;
+    if (!best || score > best.score) best = { clues: clues, score: score };
+    if (score === K) break;
+  }
+  if (!best) { best = { clues: [] }; for (var k = 0; k < K; k++) best.clues.push(guessClue()); }
+  shuffle(best.clues);
+  return { code: code, n: n, clues: best.clues.map(function (c) { return c.text; }), tests: best.clues.map(function (c) { return c.test; }), score: best.score, value: code.map(function () { return 0; }), wrong: 0, seen: {}, until: 0 };
+}
+
+/* ---------- A new case ---------- */
+function newRun() {
+  var T = TIERS[S.tier], vis = shuffle(['cubes', 'shapes', 'squares']), hands = shuffle(['picks', 'jugs', 'hops']);
+  run = { tier: S.tier, T: T, start: Date.now(), wrong: 0, over: false, puz: [] };
+  shuffle(T.mix.slice()).forEach(function (k, i) {
+    var p = { n: i + 1, wrong: 0, status: 'sealed', seen: {}, until: 0 };
+    if (k === 'visual') { p.kind = vis.pop(); p.group = 'Picture'; p.title = KINDNAME[p.kind]; }
+    else if (k === 'hands') { p.kind = hands.pop(); p.group = 'Hands-on'; p.title = KINDNAME[p.kind]; }
+    else { p.kind = 'typed'; p.group = 'Question'; p.title = CATNAME[k]; p.item = deal(S.tier, k); p.prompt = p.item.q; }
+    if (GEN[p.kind]) GEN[p.kind](p, S.tier);
+    run.puz.push(p);
+  });
+  run.lock = makeLock(T.digits, run.puz.length);
+  run.puz.forEach(function (p, i) { p.clue = run.lock.clues[i]; });
+  cur = null; closeCards(); app.dataset.screen = 'play'; paintBench();
+  $('status').textContent = 'Tap a seal to work on it. You can step away and come back.';
+}
+
+/* ---------- Puzzle makers: each fills in the prompt and its own data ---------- */
+var GEN = {}, MOUNT = {};
+
+/* Cube stack: heights never rise toward the viewer, so every column top can be seen */
+GEN.cubes = function (p, t) {
+  var n = t === 'E' ? 3 : 4, H = t === 'E' ? 3 : 4, h, total;
+  do {
+    h = []; total = 0;
+    for (var r = 0; r < n; r++) { h.push([]); for (var c = 0; c < n; c++) {
+      var m = Math.min(r ? h[r - 1][c] : H, c ? h[r][c - 1] : H);
+      h[r][c] = (r + c === 0) ? H : Math.max(0, m - (Math.random() < 0.5 ? 1 : 0) - (Math.random() < 0.15 ? 1 : 0));
+      total += h[r][c];
+    } }
+  } while (total > n * n * H - 4 || total < n * 2);
+  p.data = { n: n, H: H, h: h };
+  if (t === 'H') { p.prompt = 'These cubes are stacked in a corner. No cube floats, and none is hidden behind a taller stack. How many more cubes would it take to fill a solid block ' + n + ' wide, ' + n + ' deep and ' + H + ' tall?'; p.item = { a: [String(n * n * H - total)] }; }
+  else { p.prompt = 'These cubes are stacked in a corner. No cube floats, and none is hidden behind a taller stack. How many cubes are there altogether?'; p.item = { a: [String(total)] }; }
+};
+MOUNT.cubes = function (p, stage) {
+  var d = p.data, n = d.n, w = 30, ch = 30, pad = 8, W = 2 * n * w + pad * 2, Ht = n * w + d.H * ch + pad * 2;
+  var s = svg('svg', { viewBox: '0 0 ' + W + ' ' + Ht, role: 'img', 'aria-label': 'A stack of cubes drawn from above and to one side' }, stage);
+  s.style.maxWidth = '340px'; s.style.margin = '0 auto';
+  function pts(a) { return a.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '); }
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+    var cx = n * w + pad + (c - r) * w, cy = d.H * ch + pad + (c + r) * w / 2;
+    svg('polygon', { points: pts([[cx, cy], [cx + w, cy + w / 2], [cx, cy + w], [cx - w, cy + w / 2]]), fill: 'rgba(239,236,247,0.05)', stroke: 'rgba(239,236,247,0.25)', 'stroke-width': 1 }, s);
+    for (var z = 0; z < d.h[r][c]; z++) {
+      var y0 = cy - z * ch, y1 = y0 - ch;
+      svg('polygon', { points: pts([[cx - w, y1 + w / 2], [cx, y1 + w], [cx, y0 + w], [cx - w, y0 + w / 2]]), fill: 'var(--m-a)', stroke: 'var(--m-ink)', 'stroke-width': 1.2, 'stroke-linejoin': 'round' }, s);
+      svg('polygon', { points: pts([[cx + w, y1 + w / 2], [cx, y1 + w], [cx, y0 + w], [cx + w, y0 + w / 2]]), fill: 'var(--m-b)', stroke: 'var(--m-ink)', 'stroke-width': 1.2, 'stroke-linejoin': 'round' }, s);
+      svg('polygon', { points: pts([[cx, y1], [cx + w, y1 + w / 2], [cx, y1 + w], [cx - w, y1 + w / 2]]), fill: 'var(--m-c)', stroke: 'var(--m-ink)', 'stroke-width': 1.2, 'stroke-linejoin': 'round' }, s);
+    }
+  }
+};
+
+/* Shape sums: each shape hides a whole number */
+GEN.shapes = function (p, t) {
+  var v = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].slice(t === 'E' ? 0 : 1, t === 'E' ? 9 : 12)).slice(0, 3), a = v[0], b = v[1], c = v[2];
+  var rows = t === 'H' ? [[[0, 0, 1], a + a + b], [[0, 1, 1], a + b + b], [[1, 2, 2], b + c + c]] : [[[0, 0, 0], 3 * a], [[0, 1, 1], a + b + b], [[1, 2, 2], b + c + c]];
+  p.data = { rows: rows, last: t === 'E' ? '+' : '×' };
+  p.prompt = 'Each shape stands for a whole number. What number replaces the question mark?';
+  p.item = { a: [String(t === 'E' ? a + b + c : a + b * c)] };
+};
+MOUNT.shapes = function (p, stage) {
+  var box = el('div', 'sums');
+  function icon(i) {
+    var s = svg('svg', { viewBox: '0 0 34 34', 'aria-label': ['circle', 'triangle', 'square'][i], role: 'img' });
+    if (i === 0) svg('circle', { cx: 17, cy: 17, r: 14, fill: '#f0b03a' }, s);
+    if (i === 1) svg('polygon', { points: '17,3 32,31 2,31', fill: '#5fd0a0' }, s);
+    if (i === 2) svg('rect', { x: 4, y: 4, width: 26, height: 26, rx: 4, fill: '#ea4fae' }, s);
+    return s;
+  }
+  function row(ids, ops, total) {
+    var r = el('div', 'eqn');
+    ids.forEach(function (id, k) { if (k) r.appendChild(el('span', '', ops[k - 1])); r.appendChild(icon(id)); });
+    r.appendChild(el('span', '', '=')); r.appendChild(el('span', total === '?' ? 'q' : '', String(total)));
+    box.appendChild(r);
+  }
+  p.data.rows.forEach(function (r) { row(r[0], ['+', '+'], r[1]); });
+  row([0, 1, 2], ['+', p.data.last], '?');
+  stage.appendChild(box);
+};
+
+/* Hidden shapes: count every square (or rectangle) in a grid */
+GEN.squares = function (p, t) {
+  var g = pick(t === 'E' ? [[2, 2], [3, 2], [3, 3]] : t === 'M' ? [[4, 3], [4, 4], [5, 3]] : [[3, 3], [4, 3], [4, 4]]), a = g[0], b = g[1], n = 0;
+  if (t === 'H') n = (a * (a + 1) / 2) * (b * (b + 1) / 2); else for (var k = 1; k <= Math.min(a, b); k++) n += (a - k + 1) * (b - k + 1);
+  p.data = { a: a, b: b };
+  p.prompt = t === 'H' ? 'How many rectangles of every size can you find in this grid? Squares count as rectangles.' : 'How many squares of every size can you find in this grid?';
+  p.item = { a: [String(n)] };
+};
+MOUNT.squares = function (p, stage) {
+  var a = p.data.a, b = p.data.b, u = 44, s = svg('svg', { viewBox: '0 0 ' + (a * u + 8) + ' ' + (b * u + 8), role: 'img', 'aria-label': 'A grid ' + a + ' squares wide and ' + b + ' squares tall' }, stage);
+  s.style.maxWidth = (a * u + 8) + 'px'; s.style.margin = '0 auto';
+  svg('rect', { x: 4, y: 4, width: a * u, height: b * u, fill: 'rgba(239,236,247,0.05)' }, s);
+  for (var i = 0; i <= a; i++) svg('line', { x1: 4 + i * u, y1: 4, x2: 4 + i * u, y2: 4 + b * u, stroke: 'var(--m-a)', 'stroke-width': 4, 'stroke-linecap': 'round' }, s);
+  for (var j = 0; j <= b; j++) svg('line', { x1: 4, y1: 4 + j * u, x2: 4 + a * u, y2: 4 + j * u, stroke: 'var(--m-a)', 'stroke-width': 4, 'stroke-linecap': 'round' }, s);
+};
+
+/* Toothpicks: a false sum in stick digits; move the stated number of sticks to make it true */
+var SEG = ['abcdef', 'bc', 'abdeg', 'abcdg', 'bcfg', 'acdfg', 'acdefg', 'abc', 'abcdefg', 'abcdfg'], SEGN = 'abcdefg';
+function pickLayout(resLen) {
+  var cells = ['d', 'op', 'd', 'eq', 'd']; if (resLen === 2) cells.push('d');
+  var L = { cells: [], slots: [], fixed: [], w: 0 }, x = 4, yT = 14, W = 56, yM = yT + W + 8, yB = yM + W + 8;
+  cells.forEach(function (type) {
+    var cell = { type: type, base: L.slots.length };
+    if (type === 'd') {
+      var x0 = x + 8, x1 = x0 + W;
+      [[x0 + 6, yT, x1 - 6, yT], [x1, yT + 6, x1, yM - 6], [x1, yM + 6, x1, yB - 6], [x0 + 6, yB, x1 - 6, yB], [x0, yM + 6, x0, yB - 6], [x0, yT + 6, x0, yM - 6], [x0 + 6, yM, x1 - 6, yM]]
+        .forEach(function (q) { L.slots.push(q); });
+      x += 80;
+    } else if (type === 'op') {
+      L.fixed.push([x + 8, yM, x + 56, yM]); L.slots.push([x + 32, yM - 24, x + 32, yM + 24]); x += 64;
+    } else { L.fixed.push([x + 8, yM - 11, x + 56, yM - 11]); L.fixed.push([x + 8, yM + 11, x + 56, yM + 11]); x += 64; }
+    L.cells.push(cell);
+  });
+  L.w = x + 4; L.h = yB + 14;
+  return L;
+}
+function pickRead(L, st) {
+  var digits = [], plus = false, bad = false;
+  L.cells.forEach(function (cell) {
+    if (cell.type === 'd') { var s = ''; for (var k = 0; k < 7; k++) if (st[cell.base + k]) s += SEGN[k]; var d = SEG.indexOf(s); if (d < 0) bad = true; digits.push(d); }
+    else if (cell.type === 'op') plus = st[cell.base];
+  });
+  if (bad) return null;
+  if (digits.length === 4 && digits[2] === 0) return null;
+  var res = digits.length === 4 ? digits[2] * 10 + digits[3] : digits[2];
+  return { ok: (plus ? digits[0] + digits[1] : digits[0] - digits[1]) === res, text: digits[0] + (plus ? '+' : '-') + digits[1] + '=' + res };
+}
+GEN.picks = function (p, t) {
+  var moves = t === 'H' ? 2 : 1;
+  for (var guard = 0; guard < 20000; guard++) {
+    var plus = Math.random() < 0.5, a = ri(0, 9), b = ri(0, 9), c = plus ? a + b : a - b;
+    if (c < 0 || (t === 'E' && c > 9)) continue;
+    var L = pickLayout(String(c).length), T = L.slots.map(function () { return false; }), ds = [a, b].concat(String(c).split('').map(Number)), di = 0;
+    L.cells.forEach(function (cell) {
+      if (cell.type === 'd') { var seg = SEG[ds[di++]]; for (var k = 0; k < 7; k++) T[cell.base + k] = seg.indexOf(SEGN[k]) > -1; }
+      else if (cell.type === 'op') T[cell.base] = plus;
+    });
+    var st = T.slice();
+    for (var m = 0; m < moves; m++) {
+      var on = [], off = [];
+      T.forEach(function (v, i) { if (v && st[i]) on.push(i); if (!v && !st[i]) off.push(i); });
+      st[pick(on)] = false; st[pick(off)] = true;
+    }
+    var v = pickRead(L, st);
+    if (!v || v.ok) continue;
+    p.data = { L: L, start: st, state: st.slice(), moves: moves, shown: v.text };
+    p.prompt = 'This sum is wrong. Move exactly ' + (moves === 1 ? 'one toothpick' : 'two toothpicks') + ' to make it true. Tap a toothpick to lift it, then tap an empty place to set it down. The equals sign and the bar of the plus or minus stay put.';
+    return;
+  }
+};
+MOUNT.picks = function (p, stage) {
+  var d = p.data, L = d.L, held = -1, info = el('p', 'small');
+  var s = svg('svg', { viewBox: '0 0 ' + L.w + ' ' + L.h, role: 'group', 'aria-label': 'Toothpick sum' }, stage);
+  stage.appendChild(info);
+  function stick(q, cls) {
+    var g = svg('g', { 'class': 'stick ' + cls }, s), a = { x1: q[0], y1: q[1], x2: q[2], y2: q[3] };
+    ['hit', 'edge', 'body'].forEach(function (c) { var l = svg('line', a, g); l.setAttribute('class', c); });
+    var sh = svg('line', { x1: q[0] + (q[1] === q[3] ? 4 : -2), y1: q[1] + (q[1] === q[3] ? -2 : 4), x2: q[2] - (q[1] === q[3] ? 4 : 2), y2: q[3] - (q[1] === q[3] ? 2 : 4) }, g); sh.setAttribute('class', 'shine');
+    return g;
+  }
+  function moved() { var k = 0; d.start.forEach(function (v, i) { if (v && !d.state[i]) k++; }); return k; }
+  function draw() {
+    while (s.firstChild) s.removeChild(s.firstChild);
+    s.setAttribute('class', held > -1 ? 'holding' : '');
+    L.fixed.forEach(function (q) { stick(q, 'fixed'); });
+    L.slots.forEach(function (q, i) {
+      var g = stick(q, d.state[i] ? (i === held ? 'on held' : 'on') : 'off');
+      g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
+      g.setAttribute('aria-label', d.state[i] ? (i === held ? 'Lifted toothpick' : 'Toothpick') : 'Empty place');
+      function tap() {
+        if (p.status !== 'sealed') return;
+        if (d.state[i]) held = held === i ? -1 : i;
+        else if (held > -1) { d.state[held] = false; d.state[i] = true; held = -1; }
+        say(''); draw();
+      }
+      g.addEventListener('click', tap);
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
+    });
+    info.textContent = 'Moved ' + moved() + ' of ' + d.moves + '.';
+  }
+  draw();
+  action('Check', true, function () {
+    var k = moved(), v = pickRead(L, d.state);
+    if (k !== d.moves) return say('Move exactly ' + d.moves + '. You have moved ' + k + '.');
+    if (v && v.ok) return solve(p);
+    wrong(p, v ? 'That sum is not true.' : 'One of those is not a digit.', d.state.map(Number).join(''));
+  });
+  action('Put them back', false, function () { d.state = d.start.slice(); held = -1; draw(); say(''); });
+};
+
+/* Two jugs: measure an exact amount by filling, emptying and pouring */
+function jugBest(A, B) {
+  var dist = {}, q = [[0, 0]], best = {}; dist['0,0'] = 0;
+  while (q.length) {
+    var s = q.shift(), a = s[0], b = s[1], k = dist[a + ',' + b];
+    if (!(a in best)) best[a] = k; if (!(b in best)) best[b] = k;
+    var p1 = Math.min(a, B - b), p2 = Math.min(b, A - a);
+    [[A, b], [a, B], [0, b], [a, 0], [a - p1, b + p1], [a + p2, b - p2]].forEach(function (n) { var key = n[0] + ',' + n[1]; if (!(key in dist)) { dist[key] = k + 1; q.push(n); } });
+  }
+  return best;
+}
+GEN.jugs = function (p, t) {
+  var opts = [], lo = t === 'E' ? 4 : t === 'M' ? 8 : 10, hi = t === 'E' ? 6 : t === 'M' ? 8 : 12;
+  [[3, 5], [4, 7], [3, 7], [5, 8], [4, 9], [5, 7], [7, 9], [3, 8], [5, 9], [7, 11], [5, 12], [8, 11]].forEach(function (pr) {
+    var best = jugBest(pr[0], pr[1]);
+    Object.keys(best).forEach(function (k) { k = +k; if (k && k !== pr[0] && k !== pr[1] && best[k] >= lo && best[k] <= hi) opts.push({ A: pr[0], B: pr[1], goal: k, min: best[k] }); });
+  });
+  var o = pick(opts);
+  o.limit = t === 'E' ? Infinity : o.min + (t === 'M' ? 4 : 2); o.lv = [0, 0]; o.used = 0;
+  p.data = o;
+  p.prompt = 'You have a ' + o.A + '-litre jug, a ' + o.B + '-litre jug and a tap. Neither jug has markings. Get exactly ' + o.goal + (o.goal === 1 ? ' litre' : ' litres') + ' into either jug.' +
+    (o.limit < Infinity ? ' You have ' + o.limit + ' moves.' : '');
+};
+MOUNT.jugs = function (p, stage) {
+  var d = p.data, cap = [d.A, d.B], box = el('div', 'jugs'), info = el('p', 'small'), parts = [];
+  cap.forEach(function (c, i) {
+    var j = el('div', 'jug'), glass = el('div', 'glass'), water = el('div', 'water'), amt = el('div', 'amt'), acts = el('div', 'acts');
+    glass.style.height = (c * 13 + 6) + 'px'; glass.appendChild(water);
+    [['Fill', function () { d.lv[i] = c; }], ['Empty', function () { d.lv[i] = 0; }],
+     [i ? '← Pour' : 'Pour →', function () { var o = 1 - i, x = Math.min(d.lv[i], cap[o] - d.lv[o]); d.lv[i] -= x; d.lv[o] += x; }]].forEach(function (a) {
+      var b = el('button', '', a[0]); b.type = 'button';
+      b.addEventListener('click', function () {
+        if (p.status !== 'sealed' || locked(p)) return;
+        if (d.used >= d.limit) return say('Out of moves. Start over to try again.');
+        var before = d.lv.join(); a[1](); if (d.lv.join() === before) return;
+        d.used++; draw();
+        if (d.lv[0] === d.goal || d.lv[1] === d.goal) return solve(p);
+        if (d.used >= d.limit) say('Out of moves. Start over to try again.');
+      });
+      acts.appendChild(b);
+    });
+    j.appendChild(glass); j.appendChild(amt); j.appendChild(acts); box.appendChild(j); parts.push([water, amt]);
+  });
+  stage.appendChild(box); stage.appendChild(info);
+  function draw() {
+    parts.forEach(function (q, i) { q[0].style.height = (d.lv[i] / cap[i] * 100) + '%'; q[1].textContent = d.lv[i] + ' of ' + cap[i] + ' L'; });
+    info.textContent = 'Moves: ' + d.used + (d.limit < Infinity ? ' of ' + d.limit : '') + '. Goal: ' + d.goal + ' L.';
+  }
+  draw();
+  restartAction(p, function () { d.lv = [0, 0]; d.used = 0; draw(); });
+};
+
+/* Crossing stones: two teams swap sides by sliding and hopping */
+GEN.hops = function (p, t) {
+  var n = t === 'E' ? 2 : t === 'M' ? 3 : 4, row = [];
+  for (var i = 0; i < n; i++) row.push('L'); row.push('_'); for (i = 0; i < n; i++) row.push('R');
+  p.data = { n: n, start: row.join(''), row: row };
+  p.prompt = 'Swap the two teams. The stones on the left only move right, and the stones on the right only move left. A stone slides into the gap beside it, or hops over exactly one stone into the gap. Tap a stone to move it.';
+};
+MOUNT.hops = function (p, stage) {
+  var d = p.data, box = el('div', 'pads'), info = el('p', 'small'), used = 0;
+  stage.appendChild(box); stage.appendChild(info);
+  function target(i) {
+    var c = d.row[i], dir = c === 'L' ? 1 : c === 'R' ? -1 : 0; if (!dir) return -1;
+    if (d.row[i + dir] === '_') return i + dir;
+    if (d.row[i + dir] && d.row[i + dir] !== '_' && d.row[i + 2 * dir] === '_') return i + 2 * dir;
+    return -1;
+  }
+  function draw() {
+    box.textContent = '';
+    d.row.forEach(function (c, i) {
+      var b = el('button', 'pad' + (c === '_' ? '' : ' tok ' + c), c === 'L' ? '▶' : c === 'R' ? '◀' : ''); b.type = 'button';
+      b.setAttribute('aria-label', c === '_' ? 'Gap' : (c === 'L' ? 'Stone moving right' : 'Stone moving left') + ', place ' + (i + 1));
+      if (c === '_') b.disabled = true;
+      b.addEventListener('click', function () {
+        if (p.status !== 'sealed' || locked(p)) return;
+        var to = target(i);
+        if (to < 0) { b.classList.add('nope'); return say('That stone cannot move.'); }
+        d.row[to] = c; d.row[i] = '_'; used++; say(''); draw();
+        if (d.row.join('') === d.start.split('').reverse().join('')) return solve(p);
+        if (!d.row.some(function (x, k) { return target(k) > -1; })) say('No stone can move. Start over to try again.');
+      });
+      box.appendChild(b);
+    });
+    info.textContent = 'Moves: ' + used + '.';
+  }
+  draw();
+  restartAction(p, function () { d.row = d.start.split(''); used = 0; draw(); });
+};
+
+/* ---------- Panel plumbing shared by every puzzle ---------- */
+function say(t) { $('feedback').textContent = t; }
+function locked(p) { return Date.now() < p.until; }
+function action(label, primary, fn) {
+  var b = el('button', (primary ? 'primary ' : '') + (primary ? 'act' : ''), label); b.type = 'button';
+  b.addEventListener('click', function () { if (cur && cur.status === 'sealed' && !(primary && locked(cur))) fn(); });
+  $('p-acts').appendChild(b); return b;
+}
+function restartAction(p, reset) {
+  var costs = run.T.attempts < Infinity;
+  action(costs ? 'Start over (costs a try)' : 'Start over', false, function () {
+    if (costs) { wrong(p, 'Starting over used a try.'); if (p.status !== 'sealed') return; }
+    else say('');
+    reset();
+  });
+}
+function triesText(wrongs, max, until) {
+  if (max === Infinity) { var left = Math.ceil((until - Date.now()) / 1000); return left > 0 ? 'Wait ' + left + ' s before trying again.' : 'Unlimited tries.'; }
+  var n = max - wrongs; return n + (n === 1 ? ' try left before this jams.' : ' tries left before this jams.');
+}
+function tick() {
+  var isLock = !$('lockp').hidden, o = isLock ? run.lock : cur; if (!o || run.over) return;
+  var wait = Date.now() < o.until;
+  [].forEach.call((isLock ? $('lockp') : $('panel')).querySelectorAll('.act'), function (b) { b.disabled = wait; });
+  if (isLock) $('l-tries').textContent = triesText(o.wrong, run.T.lockTries, o.until);
+  else if (cur.status === 'sealed') $('tries').textContent = triesText(o.wrong, run.T.attempts, o.until);
+}
+function wrong(p, msg, key) {
+  if (key && p.seen[key]) return say('You already tried that. It did not use a try.');
+  if (key) p.seen[key] = 1;
+  p.wrong++; run.wrong++;
+  if (run.T.attempts === Infinity) { p.until = Date.now() + LOCKOUT_MS; say(msg); }
+  else if (p.wrong >= run.T.attempts) { p.status = 'jammed'; openPuzzle(p); }
+  else say(msg);
+  paintBench(); tick();
+}
+function solve(p) {
+  p.status = 'open';
+  if (p.kind === 'typed') markSolved(p.item.id);
+  openPuzzle(p); paintBench();
+}
+function openPuzzle(p) {
+  cur = p; closeCards(true);
+  $('p-kick').textContent = 'Seal ' + p.n + ' · ' + p.group;
+  $('p-title').textContent = p.title;
+  $('p-stage').textContent = ''; $('p-acts').textContent = ''; say(''); $('answer').value = '';
+  var sealed = p.status === 'sealed', typed = p.kind === 'typed' || p.item;
+  $('p-prompt').textContent = p.prompt;
+  if (MOUNT[p.kind]) MOUNT[p.kind](p, $('p-stage'));
+  $('answer-form').hidden = !(sealed && typed);
+  $('p-acts').hidden = !sealed;
+  $('answer').inputMode = (p.item && /^\d+$/.test(p.item.a[0]) && p.kind !== 'typed') ? 'numeric' : 'text';
+  var clue = $('p-clue'); clue.hidden = p.status !== 'open'; clue.textContent = '';
+  if (p.status === 'open') { clue.appendChild(el('b', '', 'Seal open. Your clue: ')); clue.appendChild(document.createTextNode(p.clue)); $('tries').textContent = 'This clue is also kept with the strongbox.'; }
+  else if (p.status === 'jammed') { say('This seal has jammed. Its clue is lost.'); $('tries').textContent = 'You can still try the strongbox with the clues you have.'; }
+  $('shade').hidden = false; $('panel').hidden = false; $('panel').scrollTop = 0;
+  tick();
+}
+$('answer-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var p = cur; if (!p || p.status !== 'sealed' || locked(p)) return;
+  var v = $('answer').value, n = norm(v).replace(/ /g, '');
+  if (!n) return say('Type an answer first.');
+  if (isRight(p.item, v, run.T.typo)) return solve(p);
+  $('answer').select();
+  wrong(p, 'Not right.', n);
+});
+
+/* ---------- The bench ---------- */
+function counts() { var o = { open: 0, jammed: 0 }; run.puz.forEach(function (p) { if (p.status !== 'sealed') o[p.status]++; }); return o; }
+function paintBench() {
+  var c = counts(), tiles = $('tiles'), lights = $('lights');
+  tiles.textContent = ''; lights.textContent = '';
+  run.puz.forEach(function (p) {
+    var b = el('button', 'tile ' + p.status); b.type = 'button';
+    b.appendChild(el('span', 'tk', 'Seal ' + p.n + ' · ' + (p.status === 'sealed' ? 'shut' : p.status)));
+    b.appendChild(el('span', 'tn', p.title));
+    b.appendChild(el('span', 'ts', p.status === 'open' ? 'Clue earned' : p.status === 'jammed' ? 'Clue lost' : p.group + (p.wrong ? ' · ' + p.wrong + ' wrong' : '')));
+    b.addEventListener('click', function () { openPuzzle(p); });
+    tiles.appendChild(b);
+    lights.appendChild(el('i', p.status));
+  });
+  $('s-seals').textContent = c.open + '/' + run.puz.length; $('s-wrong').textContent = run.wrong; $('s-jam').textContent = c.jammed;
+  $('box-sub').textContent = c.open ? c.open + (c.open === 1 ? ' clue' : ' clues') + ' in hand. Tap to set the code.' : 'No clues yet. Tap to look at the lock.';
+}
+function closeCards(keepShade) {
+  ['panel', 'lockp', 'end'].forEach(function (id) { $(id).hidden = true; });
+  if (!keepShade) $('shade').hidden = true;
+}
+
+/* ---------- The lock ---------- */
+function openLock() {
+  cur = null; closeCards(true);
+  var L = run.lock, box = $('wheels'); box.textContent = '';
+  L.value.forEach(function (v, i) {
+    var w = el('div', 'wheel'), up = el('button', '', '▲'), dn = el('button', '', '▼'), win = el('div', 'win'), strip = el('div', 'strip');
+    up.type = dn.type = 'button'; up.setAttribute('aria-label', 'Wheel ' + (i + 1) + ' up'); dn.setAttribute('aria-label', 'Wheel ' + (i + 1) + ' down');
+    win.setAttribute('role', 'spinbutton'); win.setAttribute('tabindex', '0'); win.setAttribute('aria-label', 'Wheel ' + (i + 1));
+    win.appendChild(strip);
+    function draw(off) {
+      strip.textContent = '';
+      for (var k = -2; k <= 2; k++) strip.appendChild(el('span', '', String((L.value[i] + k + 20) % 10)));
+      strip.style.transform = 'translateY(' + (off || 0) + 'px)'; win.setAttribute('aria-valuenow', L.value[i]);
+    }
+    function turn(by) { L.value[i] = (L.value[i] + by + 10) % 10; draw(0); }
+    up.addEventListener('click', function () { turn(1); }); dn.addEventListener('click', function () { turn(-1); });
+    win.addEventListener('keydown', function (e) { if (e.key === 'ArrowUp') { e.preventDefault(); turn(1); } if (e.key === 'ArrowDown') { e.preventDefault(); turn(-1); } });
+    var y0 = null;
+    win.addEventListener('pointerdown', function (e) { y0 = e.clientY; try { win.setPointerCapture(e.pointerId); } catch (x) {} });
+    win.addEventListener('pointermove', function (e) {
+      if (y0 == null) return; var dy = e.clientY - y0;
+      while (dy <= -40) { L.value[i] = (L.value[i] + 1) % 10; y0 -= 40; dy += 40; }
+      while (dy >= 40) { L.value[i] = (L.value[i] + 9) % 10; y0 += 40; dy -= 40; }
+      draw(dy);
+    });
+    function drop(e) { if (y0 == null) return; var dy = e.clientY - y0; y0 = null; if (dy <= -20) turn(1); else if (dy >= 20) turn(-1); else draw(0); }
+    win.addEventListener('pointerup', drop); win.addEventListener('pointercancel', function () { y0 = null; draw(0); });
+    w.appendChild(up); w.appendChild(win); w.appendChild(dn); box.appendChild(w); draw(0);
+  });
+  var list = $('clues'); list.textContent = '';
+  run.puz.forEach(function (p) {
+    var li = el('li', p.status === 'open' ? '' : p.status === 'jammed' ? 'lost' : 'shut');
+    li.appendChild(el('b', '', 'Seal ' + p.n));
+    li.appendChild(document.createTextNode(p.status === 'open' ? p.clue : p.status === 'jammed' ? 'Jammed. This clue is lost.' : 'Still shut: ' + p.title + '.'));
+    list.appendChild(li);
+  });
+  $('l-note').textContent = 'The code has ' + L.n + ' different digits. Drag a wheel or use the arrows, then pull the latch. Every clue is true.';
+  $('l-feedback').textContent = '';
+  $('shade').hidden = false; $('lockp').hidden = false; $('lockp').scrollTop = 0; tick();
+}
+$('latch').addEventListener('click', function () {
+  var L = run.lock; if (run.over || Date.now() < L.until) return;
+  var guess = L.value.join('');
+  if (guess === L.code.join('')) return finish(true);
+  if (L.seen[guess]) { $('l-feedback').textContent = 'You already tried ' + guess + '. It did not use a pull.'; return; }
+  L.seen[guess] = 1; L.wrong++; run.wrong++;
+  if (L.wrong >= run.T.lockTries) return finish(false);
+  if (run.T.lockTries === Infinity) L.until = Date.now() + LOCKOUT_MS;
+  $('l-feedback').textContent = 'The latch does not move.'; paintBench(); tick();
+});
+function finish(won) {
+  run.over = true; closeCards(true);
+  var c = counts(), secs = Math.round((Date.now() - run.start) / 1000), stars = !won ? 0 : (c.jammed === 0 && run.lock.wrong === 0) ? 3 : c.jammed <= 1 ? 2 : 1;
+  $('end-title').textContent = won ? 'The strongbox is open' : 'The latch has jammed';
+  $('end-stars').textContent = won ? '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars) : '';
+  $('end-text').textContent = won ? (stars === 3 ? 'Every seal broken and the code right on the first pull.' : 'You cracked the code.') : 'The strongbox stays shut. The code is not shown, so the next case is just as hard.';
+  var dl = $('end-stats'); dl.textContent = '';
+  [['Difficulty', run.T.name], ['Seals opened', c.open + ' of ' + run.puz.length], ['Seals jammed', c.jammed], ['Wrong answers', run.wrong], ['Latch pulls missed', run.lock.wrong],
+   ['Time', Math.floor(secs / 60) + ' min ' + (secs % 60) + ' s']].forEach(function (r) { dl.appendChild(el('dt', '', r[0])); dl.appendChild(el('dd', '', String(r[1]))); });
+  $('shade').hidden = false; $('end').hidden = false; paintBench();
+}
+
+/* ---------- Wiring ---------- */
+$('start').addEventListener('click', newRun);
+$('again').addEventListener('click', newRun);
+$('to-setup').addEventListener('click', function () { closeCards(); app.dataset.screen = 'setup'; });
+$('end-setup').addEventListener('click', function () { closeCards(); app.dataset.screen = 'setup'; });
+$('box').addEventListener('click', function () { if (!run.over) openLock(); });
+$('step-away').addEventListener('click', function () { cur = null; closeCards(); });
+$('l-close').addEventListener('click', function () { closeCards(); });
+$('shade').addEventListener('click', function () { if (!run || !run.over) { cur = null; closeCards(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && run && !run.over) { cur = null; closeCards(); } });
+ticker = setInterval(function () { if (run && app.dataset.screen === 'play') tick(); }, 250);
+paintSetup();
+
+/* Details added to a bug report so a problem can be reproduced */
+window.CPBugContext = function () {
+  var o = { game: 'Strongbox', screen: app.dataset.screen, difficulty: S.tier, material: S.mat, background: S.bg };
+  if (run) {
+    o.seals = run.puz.map(function (p) { return p.n + ':' + (p.item && p.item.id || p.kind) + ':' + p.status; }).join(' ');
+    o.code = run.lock.code.join(''); o.wheels = run.lock.value.join('');
+    if (cur) { o.open = 'seal ' + cur.n + ' ' + cur.kind; var d = cur.data;
+      if (cur.kind === 'picks') o.detail = d.shown + ' sticks ' + d.state.map(Number).join('');
+      if (cur.kind === 'jugs') o.detail = d.A + '/' + d.B + ' goal ' + d.goal + ' at ' + d.lv.join(',') + ' moves ' + d.used;
+      if (cur.kind === 'hops') o.detail = d.row.join('');
+      if (cur.kind === 'cubes') o.detail = JSON.stringify(d.h);
+      if (cur.kind === 'shapes') o.detail = JSON.stringify(d.rows);
+      if (cur.kind === 'squares') o.detail = d.a + 'x' + d.b; }
+    if (!$('lockp').hidden) o.open = 'lock';
+  }
+  return o;
+};
+/* Test hook: lets an automated check read the current case. */
+window.__sb = function () { return { run: run, pickRead: pickRead, isRight: isRight, makeLock: makeLock }; };
+})();
+</script>
+<script>
+/* Case-file categories open one at a time. "Check for update" compares the published version
+   with the one saved on this device, and installs the new one if there is one. */
+(function () {
+  var files = [].slice.call(document.querySelectorAll('details.file'));
+  var btn = document.getElementById('upd-check'), out = document.getElementById('upd-status'), ver = document.getElementById('upd-version');
+  function installed() {
+    if (!window.caches) return Promise.resolve(0);
+    return caches.keys().then(function (keys) {
+      return keys.map(function (k) { var m = /^critical-puzzles-v(\d+)$/.exec(k); return m ? +m[1] : 0; }).reduce(function (a, b) { return Math.max(a, b); }, 0);
+    });
+  }
+  function showVersion() { installed().then(function (n) { ver.textContent = n ? 'Installed version: ' + n : 'Not saved for offline use yet.'; }).catch(function () {}); }
+  files.forEach(function (d) { d.addEventListener('toggle', function () {
+    if (!d.open) return; files.forEach(function (o) { if (o !== d && o.parentNode === d.parentNode) o.open = false; });
+    if (btn && d.contains(btn)) showVersion(); }); });
+  if (!btn) return;
+  showVersion();
+  function fail() { out.textContent = 'Could not check. Make sure you are online, then try again.'; btn.disabled = false; }
+  function forceReload() { // last resort: clear the saved copy and load everything fresh
+    var jobs = [];
+    if (window.caches) jobs.push(caches.keys().then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); }));
+    if ('serviceWorker' in navigator) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+    Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
+  }
+  btn.addEventListener('click', function () {
+    btn.disabled = true; out.textContent = 'Checking…';
+    fetch('sw.js?check=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.text(); }).then(function (text) {
+      var m = /critical-puzzles-v(\d+)/.exec(text); if (!m) throw 0; var latest = +m[1];
+      return installed().then(function (have) {
+        if (latest <= have) { out.textContent = 'You have the latest version (' + have + ').'; btn.disabled = false; return; }
+        out.textContent = 'Version ' + latest + ' found. Installing…';
+        if (!('serviceWorker' in navigator)) return forceReload();
+        navigator.serviceWorker.getRegistration().then(function (reg) { return reg || navigator.serviceWorker.register('sw.js'); })
+          .then(function (reg) { reg.update().catch(function () {}); }).catch(function () {});
+        var tries = 0, timer = setInterval(function () {
+          tries++;
+          Promise.all([installed(), navigator.serviceWorker.getRegistration()]).then(function (v) {
+            var reg = v[1], ready = v[0] >= latest && reg && reg.active && !reg.installing && !reg.waiting;
+            if (!ready && tries < 24) return;
+            clearInterval(timer); out.textContent = 'Updated. Reloading…';
+            if (ready) setTimeout(function () { location.reload(); }, 500); else forceReload();
+          }).catch(function () {});
+        }, 500);
+      });
+    }).catch(fail);
+  });
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+<script src="bugreport.js"></script>
+</body>
+</html>
