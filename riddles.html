@@ -165,11 +165,11 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 </div>
 </details>
 <details class="file">
-<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 04</span><span class="fname">The app</span><span class="fdesc">Version and updates</span></span></summary>
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 04</span><span class="fname">The app</span><span class="fdesc">Version, updates and bug reports</span></span></summary>
 <div class="fbody">
 <div class="group">
 <p class="hint" id="upd-version"></p>
-<div class="row"><button id="upd-check" type="button">Check for update</button></div>
+<div class="row"><button id="upd-check" type="button">Check for update</button><button type="button" data-bug-open>&#128030; Report a bug</button></div>
 <p class="hint" id="upd-status" role="status" aria-live="polite"></p>
 </div>
 </div>
@@ -403,7 +403,7 @@ window.__riddleMaze = { generate: generate, checkAnswer: checkAnswer, TIERS: TIE
 /* ---------- 3D scene ---------- */
 var canvas = $('view'), renderer, scene, camera, pivot, mazeGroup, previewGroup, envTex, woodTex;
 var S = 4, RS = 2.4, HW = 0.9, FH = 3.4;
-try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); } catch (e) { renderer = null; }
+try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true }); } catch (e) { renderer = null; }
 if (!renderer) { $('setup').insertAdjacentHTML('beforeend', '<p class="hint">This device could not start 3D graphics, so the maze cannot be shown.</p>'); $('start').disabled = true; return; }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -970,5 +970,6 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
 </script>
+<script src="bugreport.js"></script>
 </body>
 </html>
