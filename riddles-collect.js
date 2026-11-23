@@ -1,19 +1,11 @@
-/* Riddle Maze collectables: totems, table scenery and badges.
+/* Riddle Maze collectables: table scenery and badges.
    Everything a player has found is kept on the device under one storage key. */
-window.CPCollect = function (THREE, woodTex, renderer) {
+window.CPCollect = function (THREE, woodTex) {
   'use strict';
-  var KEY = 'cp-riddle-collection', H = 0.69; // every totem is the same height and the same core width
+  var KEY = 'cp-riddle-collection';
 
   /* ---------- What can be found ---------- */
-  var RARITY = ['Common', 'Uncommon', 'Rare', 'Legendary'];
-  // Designs and finishes come from the totem factory (totem-factory.js). Rarity is set here.
-  var factory = new TotemAssetFactory(THREE, renderer), SCALE = 0.36; H = factory.CORE_HEIGHT * SCALE;
-  var RARITY_OF = { wood: 0, stone: 0, bronze: 1, silver: 1, obsidian: 1, amethyst: 2, sapphire: 2, ruby: 2, emerald: 2, gold: 3, diamond: 3 };
-  var FINISHES = TotemAssetFactory.FINISH_TIERS.map(function (f) { return { id: f.id, name: f.name, rarity: RARITY_OF[f.id] || 0 }; });
-  var DESIGNS = TotemAssetFactory.TOTEM_TYPES.map(function (t) { return [t.id, t.name, t.desc]; });
-  // chance of each rarity, per difficulty (percent): harder mazes hold rarer totems
-  var ODDS = { E: [88, 12, 0, 0], M: [58, 30, 10, 2], H: [30, 38, 24, 8] };
-  var TOTEMS_PER_MAZE = { E: [1, 0], M: [1, 0.5], H: [2, 0] }, SCENERY_PER_MAZE = { E: 2, M: 2, H: 3 }; // [certain, chance of one more]
+  var SCENERY_PER_MAZE = { E: 2, M: 2, H: 3 };
   var GROUNDS = [['wood', 'Bare table'], ['grass', 'Grass'], ['moss', 'Moss'], ['sand', 'Sand'], ['gravel', 'Gravel'], ['snow', 'Snow']];
   var OBJECTS = [['stones', 'Pile of stones'], ['boulder', 'Boulder'], ['pine', 'Pine tree'], ['oak', 'Oak tree'], ['birch', 'Birch tree'], ['bush', 'Bush'],
     ['pathstones', 'Path stones'], ['stump', 'Tree stump'], ['mushrooms', 'Mushroom patch'], ['flowers', 'Flower patch'], ['lamppost', 'Lamp post'], ['well', 'Well'],
@@ -22,38 +14,26 @@ window.CPCollect = function (THREE, woodTex, renderer) {
     ['three', 'Three stars', 'Earn three stars'], ['medium', 'Second floor', 'Escape a Medium maze'], ['hard', 'Top floor', 'Escape a Hard maze'],
     ['quick', 'Quick wits', 'Escape in under two minutes'], ['oil', 'Oil to spare', 'Escape a Hard maze with 4 or more oil left'], ['wins10', 'Regular', 'Escape 10 mazes'],
     ['doors25', 'Locksmith', 'Open 25 doors in total'], ['solved50', 'Scholar', 'Solve 50 different riddles'], ['solved150', 'Riddle master', 'Solve all 150 riddles'],
-    ['totem1', 'First find', 'Find a totem'], ['totem10', 'Collector', 'Find 10 different totems'], ['totem40', 'Curator', 'Find 40 different totems'],
-    ['gold', 'Gold fever', 'Find a golden totem'], ['stack4', 'Full stack', 'Stack four totems'], ['decor10', 'Groundskeeper', 'Have 10 pieces of scenery on the table']];
+    ['decor10', 'Groundskeeper', 'Have 10 pieces of scenery on the table']];
 
   /* ---------- Saved collection ---------- */
   function load() {
     var d = null; try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
     d = d && typeof d === 'object' ? d : {};
-    d.totems = d.totems || {}; d.scenery = d.scenery || {}; d.badges = d.badges || []; d.stack = d.stack || []; d.decor = d.decor || [];
+    d.scenery = d.scenery || {}; d.badges = d.badges || []; d.decor = d.decor || [];
     d.ground = d.ground || 'wood'; d.life = d.life || {}; d.life.wins = d.life.wins || { E: 0, M: 0, H: 0 }; d.life.doors = d.life.doors || 0; d.life.solved = d.life.solved || [];
-    var ok = function (k) { var p = String(k).split(':'); return DESIGNS.some(function (x) { return x[0] === p[0]; }) && FINISHES.some(function (f) { return f.id === p[1]; }); };
-    Object.keys(d.totems).forEach(function (k) { if (!ok(k)) delete d.totems[k]; }); d.stack = d.stack.filter(function (k) { return ok(k) && d.totems[k]; });
+    // Tidy saves from older versions: drop collectables and badges this version no longer has, so nothing unknown is drawn or listed.
+    var known = function (id) { return GROUNDS.concat(OBJECTS).some(function (s) { return s[0] === id; }); };
+    ['totems', 'stack'].forEach(function (k) { delete d[k]; });
+    d.decor = d.decor.filter(function (it) { return it && known(it.id); });
+    d.badges = d.badges.filter(function (b) { return BADGES.some(function (x) { return x[0] === b; }); });
     return d;
   }
   var data = load();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
-  function finishOf(key) { var id = key.split(':')[1]; return FINISHES.filter(function (f) { return f.id === id; })[0]; }
-  function designName(key) { var id = key.split(':')[0]; return DESIGNS.filter(function (d) { return d[0] === id; })[0][1]; }
-  function totemName(key) { return finishOf(key).name + ' · ' + designName(key); }
-  function totemDesc(key) { var id = key.split(':')[0]; return DESIGNS.filter(function (d) { return d[0] === id; })[0][2]; }
   function sceneryName(id) { return GROUNDS.concat(OBJECTS).filter(function (s) { return s[0] === id; })[0][1]; }
   function isGround(id) { return GROUNDS.some(function (g) { return g[0] === id; }); }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
-  function rollTotem(tier) {
-    var key = '';
-    for (var tries = 0; tries < 2; tries++) { // one re-roll if you already own it
-      var r = Math.random() * 100, odds = ODDS[tier], rarity = 0;
-      for (var i = 0; i < 4; i++) { if (r < odds[i]) { rarity = i; break; } r -= odds[i]; }
-      key = pick(DESIGNS)[0] + ':' + pick(FINISHES.filter(function (f) { return f.rarity === rarity; })).id;
-      if (!data.totems[key]) break;
-    }
-    return key;
-  }
   function rollScenery() { // grounds are rarer than objects, and a ground you already own is not offered again
     var grounds = GROUNDS.slice(1).filter(function (g) { return !data.scenery[g[0]]; });
     return grounds.length && Math.random() < 0.2 ? pick(grounds)[0] : pick(OBJECTS)[0];
@@ -61,15 +41,11 @@ window.CPCollect = function (THREE, woodTex, renderer) {
   function placeFinds(maze, tier) { // hide this maze's finds in rooms away from the start and the exit
     var rooms = maze.rooms.filter(function (r) { return r.id !== maze.start && r.id !== maze.exit; });
     for (var i = rooms.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = rooms[i]; rooms[i] = rooms[j]; rooms[j] = t; }
-    var nT = TOTEMS_PER_MAZE[tier][0] + (Math.random() < TOTEMS_PER_MAZE[tier][1] ? 1 : 0), nS = SCENERY_PER_MAZE[tier];
-    rooms.forEach(function (r) { r.find = null; if (nT > 0) { r.find = { type: 'totem', key: rollTotem(tier) }; nT--; } else if (nS > 0) { r.find = { type: 'scenery', id: rollScenery() }; nS--; } });
+    var nS = SCENERY_PER_MAZE[tier];
+    rooms.forEach(function (r) { r.find = null; if (nS > 0) { r.find = { type: 'scenery', id: rollScenery() }; nS--; } });
   }
   function award(id, fresh) { if (data.badges.indexOf(id) < 0) { data.badges.push(id); fresh.push(id); } }
   function sweep(fresh) { // badges that depend on totals
-    var owned = Object.keys(data.totems).length;
-    if (owned >= 1) award('totem1', fresh); if (owned >= 10) award('totem10', fresh); if (owned >= 40) award('totem40', fresh);
-    if (Object.keys(data.totems).some(function (k) { return k.split(':')[1] === 'gold'; })) award('gold', fresh);
-    if (data.stack.length >= 4) award('stack4', fresh);
     if (data.decor.length >= 10) award('decor10', fresh);
     if (data.life.doors >= 25) award('doors25', fresh);
     if (data.life.solved.length >= 50) award('solved50', fresh); if (data.life.solved.length >= 150) award('solved150', fresh);
@@ -77,7 +53,7 @@ window.CPCollect = function (THREE, woodTex, renderer) {
     save(); return fresh;
   }
   function collect(find) {
-    if (find.type === 'totem') data.totems[find.key] = (data.totems[find.key] || 0) + 1; else data.scenery[find.id] = (data.scenery[find.id] || 0) + 1;
+    data.scenery[find.id] = (data.scenery[find.id] || 0) + 1;
     return sweep([]);
   }
   function doorOpened(riddleId) { data.life.doors++; if (riddleId && data.life.solved.indexOf(riddleId) < 0) data.life.solved.push(riddleId); return sweep([]); }
@@ -101,26 +77,6 @@ window.CPCollect = function (THREE, woodTex, renderer) {
   var sph = function (r) { return new THREE.SphereGeometry(r, 16, 12); }, cyl = function (a, b, h, s) { return new THREE.CylinderGeometry(a, b, h, s || 20); },
     box = function (x, y, z) { return new THREE.BoxGeometry(x, y, z); }, cone = function (r, h, s) { return new THREE.ConeGeometry(r, h, s || 12); },
     dome = function (r) { return new THREE.SphereGeometry(r, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2); };
-
-  /* ---------- Totems: built by TotemAssetFactory, scaled to suit the maze ----------
-     The factory writes colours as they should look on screen; this renderer needs them converted once. */
-  ['wood', 'stone', 'water', 'tail'].forEach(function (k) { if (factory.textures[k]) factory.textures[k].encoding = THREE.sRGBEncoding; }); // colour textures only
-  function tune(root) {
-    root.traverse(function (o) {
-      if (!o.isMesh) return; var m = o.material;
-      if (!m.userData.tuned && !m.isMeshBasicMaterial) { m.userData.tuned = true; if (m.color) m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear(); }
-      o.castShadow = o.receiveShadow = !m.transparent;
-    });
-  }
-  function wrap(inner, update) { tune(inner); inner.scale.setScalar(SCALE); var g = new THREE.Group(); g.add(inner); g.userData.update = update; return g; }
-  function totemMesh(key) {
-    var p = key.split(':'), piece = factory.createTotemPiece(p[0], p[1]), an = piece.userData.animators || [];
-    return wrap(piece, function (t) { for (var i = 0; i < an.length; i++) an[i](t); });
-  }
-  function stackMesh(keys) { // the factory's own stack: pedestal base, then up to four totems, bottom first
-    var st = factory.createTotemStack(keys.map(function (k) { return { type: k.split(':')[0], finish: k.split(':')[1] }; }));
-    return wrap(st, st.userData.update);
-  }
 
   /* ---------- Scenery for the table ---------- */
   var groundTex = {};
@@ -165,9 +121,9 @@ window.CPCollect = function (THREE, woodTex, renderer) {
   function crateMesh() { var g = new THREE.Group(), w = col(0x9b7650, { roughness: 0.8 }), b = col(0x4a3524, { roughness: 0.8 });
     put(g, box(0.4, 0.4, 0.4), w, 0, 0.2, 0); put(g, box(0.42, 0.06, 0.42), b, 0, 0.06, 0); put(g, box(0.42, 0.06, 0.42), b, 0, 0.34, 0); return g; }
 
-  return { H: H, RARITY: RARITY, FINISHES: FINISHES, DESIGNS: DESIGNS, GROUNDS: GROUNDS, OBJECTS: OBJECTS, BADGES: BADGES, ODDS: ODDS,
+  return { GROUNDS: GROUNDS, OBJECTS: OBJECTS, BADGES: BADGES,
     data: function () { return data; }, save: save, reload: function () { data = load(); return data; },
-    totemName: totemName, totemDesc: totemDesc, sceneryName: sceneryName, isGround: isGround, finishOf: finishOf, badgeName: badgeName,
-    rollTotem: rollTotem, placeFinds: placeFinds, collect: collect, doorOpened: doorOpened, runWon: runWon, sweep: sweep,
-    totemMesh: totemMesh, stackMesh: stackMesh, sceneryMesh: sceneryMesh, crateMesh: crateMesh, groundTexture: groundTexture };
+    sceneryName: sceneryName, isGround: isGround, badgeName: badgeName,
+    placeFinds: placeFinds, collect: collect, doorOpened: doorOpened, runWon: runWon, sweep: sweep,
+    sceneryMesh: sceneryMesh, crateMesh: crateMesh, groundTexture: groundTexture };
 };
