@@ -93,6 +93,43 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 #end dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 10px 0; }
 #end dd { margin: 0; font-weight: 600; text-align: right; }
 
+/* ----- Trophy room, decorating tray, maze review ----- */
+#app[data-screen="trophy"] #hud, #app[data-screen="trophy"] #status { display: none; }
+#app[data-screen="trophy"] #view { pointer-events: none; }
+#trophy { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: space-between; gap: 10px;
+  padding: calc(12px + var(--safe-t)) 12px calc(12px + var(--safe-b)); pointer-events: none; }
+#app[data-screen="trophy"] #trophy { display: flex; }
+#trophy > * { pointer-events: auto; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tabs button { padding: 10px 12px; font-size: 13px; border-radius: 999px; background: rgba(29, 26, 40, 0.85); }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: #15131d; border-color: transparent; }
+#trophy-card, #tray { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; max-width: 520px; width: 100%; margin: 0 auto; overflow-y: auto; }
+#trophy-card { max-height: 52%; }
+#trophy-card h2, #tray h2 { margin: 0 0 4px; font-family: var(--display); font-weight: 500; font-size: 15px; }
+#trophy-card p, #tray p { margin: 4px 0; }
+.rar-0 { color: var(--muted); } .rar-1 { color: var(--good); } .rar-2 { color: #8fb4ff; } .rar-3 { color: var(--amber); }
+.slots { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.slots li { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; background: var(--tile); border-radius: 10px; font-size: 14px; }
+.slots li span { flex: 1; min-width: 0; }
+.slots button { padding: 8px 11px; font-size: 13px; }
+.badges { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; }
+.badges li { padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); font-size: 12.5px; color: var(--muted); opacity: 0.55; }
+.badges li b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
+.badges li.got { border-color: var(--amber); opacity: 1; }
+.badges li.got b::before { content: "\2605\00A0"; color: var(--amber); }
+#tray { position: absolute; left: 12px; right: 12px; bottom: calc(12px + var(--safe-b)); width: auto; z-index: 4; max-height: 36%; padding: 10px 12px; }
+#tray .chips { gap: 6px; } #tray .chips button { padding: 8px 11px; font-size: 12.5px; }
+#app.over #stats { display: none; }
+#tray .label { display: block; margin: 8px 0 6px; }
+#endbar { position: absolute; left: 12px; right: 12px; top: calc(64px + var(--safe-t)); margin: 0 auto; max-width: 480px; display: flex; flex-wrap: wrap; gap: 8px; z-index: 4; }
+#endbar button { padding: 10px 12px; font-size: 13px; background: rgba(29, 26, 40, 0.92); }
+#endbar button.primary { background: var(--accent); }
+.rev { padding: 10px 12px; background: var(--tile); border-radius: 10px; margin-top: 8px; font-size: 14px; -webkit-user-select: text; user-select: text; }
+.rev h3 { margin: 0 0 4px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.rev .q { font-size: 15px; margin: 0; }
+.rev .st { color: var(--muted); font-size: 13px; margin: 5px 0 0; }
+.rev .cluebox { margin: 6px 0 0; }
+
 /* ----- Settings as case files: each category is a sealed file that opens one at a time ----- */
 .file { border: 1px solid var(--line); border-radius: 14px; background: var(--tile); }
 .file > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 11px 14px; cursor: pointer; border-radius: 14px; }
@@ -175,13 +212,14 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 </div>
 </details>
     </div>
-    <div class="group"><button id="start" class="primary" type="button">Enter the maze</button></div>
+    <div class="group"><div class="row"><button id="start" class="primary" type="button">Enter the maze</button><button id="open-trophy" type="button">Trophy room</button></div></div>
   </section>
 
   <header id="hud">
     <button id="to-setup" type="button">&larr; Setup</button>
     <button id="open-journal" type="button">Journal <span id="jcount">0</span></button>
     <button id="recentre" type="button">Recentre</button>
+    <button id="open-decor" type="button">Decorate</button>
     <dl id="stats">
       <div><dt class="label">Doors</dt><dd id="s-doors">0</dd></div>
       <div><dt class="label">Wrong</dt><dd id="s-wrong">0</dd></div>
@@ -227,15 +265,45 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
     <p class="stars" id="end-stars" aria-hidden="true"></p>
     <p id="end-text"></p>
     <dl id="end-stats"></dl>
+    <div id="end-finds"></div>
     <div class="row">
       <button id="again" class="primary" type="button">New maze</button>
+      <button id="end-review" type="button">Review the maze</button>
       <button id="end-setup" type="button">Change setup</button>
     </div>
   </div>
+
+  <div id="endbar" hidden>
+    <button id="show-results" class="primary" type="button">Show results</button>
+    <button id="open-review" type="button">Riddles and clues</button>
+    <button id="review-floor" type="button">Floor</button>
+  </div>
+
+  <div id="review" class="card" hidden role="dialog" aria-labelledby="review-title">
+    <h2 id="review-title">Riddles and clues</h2>
+    <div id="review-list"></div>
+    <div class="row"><button id="close-review" class="primary" type="button">Close</button></div>
+  </div>
+
+  <div id="tray" hidden role="dialog" aria-labelledby="tray-title">
+    <h2 id="tray-title">Decorate the table</h2>
+    <p class="small" id="tray-hint"></p>
+    <span class="label">Ground</span>
+    <div class="chips" id="tray-grounds"></div>
+    <span class="label">Scenery</span>
+    <div class="chips" id="tray-items"></div>
+    <div class="row"><button id="tray-done" class="primary" type="button">Done</button><button id="tray-clear" type="button">Clear the table</button></div>
+  </div>
+
+  <section id="trophy" aria-label="Trophy room">
+    <div class="tabs"><button id="trophy-back" type="button">&larr; Back</button><span class="tabs" id="trophy-tabs"></span></div>
+    <div id="trophy-card"></div>
+  </section>
 </div>
 
 <script src="three.min.js"></script>
 <script src="riddles-data.js"></script>
+<script src="riddles-collect.js"></script>
 <script>
 (function () {
 'use strict';
@@ -541,6 +609,13 @@ function buildToken(kind, matKind) {
   return g;
 }
 
+/* ---------- Collectables: totems, scenery, badges (see riddles-collect.js) ---------- */
+var C = window.CPCollect(THREE, woodTex);
+var decorMode = false, decorPick = null, decorGroup = null, decorPicks = [], tableTop = null, tableMats = null, bsideNow = 0;
+var reviewing = false, reviewFloor = 0, trophyGroup = new THREE.Group(); scene.add(trophyGroup); trophyGroup.visible = false;
+function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tray'].forEach(function (id) { $(id).hidden = true; }); decorMode = false; }
+function badgeNote(b) { return '<p class="cluebox"><b>Badge earned</b> ' + esc(C.badgeName(b)) + '</p>'; }
+
 /* ---------- Game state ---------- */
 var maze = null, T = null, cur = 0, keys = 0, oil = 0, stats = null, journal = [], busy = false, over = false, panelEdge = -1, lockUntil = 0;
 var roomObjs = [], edgeObjs = [], fadeList = [], pickables = [], token = null, tweens = [];
@@ -601,6 +676,7 @@ function buildMaze() {
       var bit = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.04), km); bit.position.set(0.07, -0.2, 0); kg.add(bit);
       o.keyMesh = kg;
     }
+    if (r.find) { var fm = r.find.type === 'totem' ? C.totemMesh(r.find.key) : C.crateMesh(); fm.scale.setScalar(r.find.type === 'totem' ? 0.62 : 0.8); fm.position.set(0.68, 0.1, 0.68); detail.add(fm); o.findMesh = fm; }
     roomObjs.push(o);
   });
   maze.edges.forEach(function (e, i) {
@@ -628,7 +704,7 @@ function buildMaze() {
     edgeObjs.push(o);
   });
   // The stationary table: a paved board set into a round wooden top on a fixed pedestal base.
-  var bside = Math.ceil(span + 3); boardY = (Math.min.apply(0, fs) - maze.cf) * FH - 0.1; tableR = bside * 0.71 + 1.3;
+  var bside = Math.ceil(span + 3); boardY = (Math.min.apply(0, fs) - maze.cf) * FH - 0.1; tableR = bside * 0.71 + 3.2; bsideNow = bside;
   if (!paveTex) { var pc = document.createElement('canvas'); pc.width = pc.height = 256; var px = pc.getContext('2d'), pr = rng(11);
     px.fillStyle = '#3b3842'; px.fillRect(0, 0, 256, 256);
     for (var ty = 0; ty < 4; ty++) for (var tx = 0; tx < 4; tx++) { var v = 96 + Math.floor(pr() * 46), off = (ty % 2) * 32;
@@ -641,7 +717,7 @@ function buildMaze() {
   var board = new THREE.Mesh(new THREE.BoxGeometry(bside, 0.24, bside), [null, null, paving, null, null, null].map(function (m) { return m || new THREE.MeshStandardMaterial({ color: 0x3b3842, roughness: 0.95 }); }));
   board.position.y = boardY - 0.12; board.userData.board = true; mazeGroup.add(board);
   var walnut = new THREE.MeshStandardMaterial({ color: 0x5a3d2b, map: woodTex, roughness: 0.6, metalness: 0, envMapIntensity: 0.3 });
-  var top = new THREE.Mesh(new THREE.CylinderGeometry(tableR, tableR - 0.25, 0.6, 64), walnut); top.position.y = boardY - 0.2 - 0.3; top.userData.board = true; mazeGroup.add(top);
+  tableMats = [walnut, walnut, walnut]; var top = new THREE.Mesh(new THREE.CylinderGeometry(tableR, tableR - 0.25, 0.6, 64), tableMats); tableTop = top; top.position.y = boardY - 0.2 - 0.3; top.userData.board = true; mazeGroup.add(top);
   var legH = 9, stem = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.16, tableR * 0.26, legH, 24), walnut); stem.position.y = boardY - 0.8 - legH / 2; stem.userData.board = true; mazeGroup.add(stem);
   var foot = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.5, tableR * 0.58, 0.7, 48), walnut); foot.position.y = boardY - 0.8 - legH - 0.35; foot.userData.board = true; mazeGroup.add(foot);
   mazeGroup.traverse(function (o) { if (!o.isMesh) return; o.receiveShadow = true; o.castShadow = !o.userData.board && !Array.isArray(o.material) && o.material.depthWrite !== false; });
@@ -653,15 +729,34 @@ function buildMaze() {
   lamp.angle = Math.min(0.8, Math.atan((tableR * 0.8) / lampLen));
   token.position.copy(roomPos(maze.rooms[cur])); token.position.y += 0.1;
   mazeGroup.quaternion.identity(); pivot.position.set(0, 0, 0); camTarget.set(0, roomPos(maze.rooms[cur]).y, 0); resetView();
+  buildDecor();
+}
+/* Scenery sits on the table top in the ring around the board. Positions are saved as an angle and a
+   0-1 distance across that ring, so they still fit when the next maze has a different size of table. */
+function ringEdges(a) { var outer = tableR - 0.6, inner = Math.min(outer, (bsideNow / 2 + 0.7) / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)))); return [inner, outer]; }
+function buildDecor() {
+  if (decorGroup) mazeGroup.remove(decorGroup);
+  decorGroup = new THREE.Group(); decorGroup.position.y = boardY - 0.2; mazeGroup.add(decorGroup); decorPicks = [];
+  var d = C.data();
+  d.decor = d.decor.filter(function (it) { return it.id !== 'stack' || d.stack.length; });
+  d.decor.forEach(function (it, i) {
+    var m = it.id === 'stack' ? C.stackMesh(d.stack) : C.sceneryMesh(it.id), e = ringEdges(it.a), r = e[0] + it.t * (e[1] - e[0]);
+    m.position.set(Math.sin(it.a) * r, 0, Math.cos(it.a) * r); m.rotation.y = it.r || 0; m.scale.setScalar(it.id === 'stack' ? 1.3 : 1.5);
+    m.traverse(function (o) { if (o.isMesh) { o.userData.decor = i; decorPicks.push(o); } }); decorGroup.add(m);
+  });
+  var cap = tableMats[0];
+  if (d.ground !== 'wood') { var gt = C.groundTexture(d.ground); gt.repeat.set(tableR / 1.5, tableR / 1.5); cap = new THREE.MeshStandardMaterial({ map: gt, roughness: 0.95, envMapIntensity: 0.15 }); }
+  tableTop.material = [tableMats[0], cap, tableMats[0]];
 }
 
 function refresh() {
-  var curF = maze.rooms[cur].f;
-  maze.rooms.forEach(function (r, i) { roomObjs[i].detail.visible = r.visited; roomObjs[i].frost.visible = !r.visited;
+  var curF = reviewing ? reviewFloor : maze.rooms[cur].f;
+  maze.rooms.forEach(function (r, i) { roomObjs[i].detail.visible = r.visited || reviewing; roomObjs[i].frost.visible = !(r.visited || reviewing);
+    if (roomObjs[i].findMesh) roomObjs[i].findMesh.visible = !!r.find;
     if (roomObjs[i].tablet) roomObjs[i].tablet.visible = true;
     if (roomObjs[i].keyMesh) roomObjs[i].keyMesh.visible = r.key; });
   maze.edges.forEach(function (e, i) { var o = edgeObjs[i];
-    o.group.visible = maze.rooms[e.a].visited || maze.rooms[e.b].visited;
+    o.group.visible = reviewing || maze.rooms[e.a].visited || maze.rooms[e.b].visited;
     var c = e.state === 'open' ? [0x5fd0a0, 0x1c6a4c] : e.state === 'sealed' ? [0x77747f, 0x000000] : [0xe0a030, 0x7a4a00];
     o.mat.color.setHex(c[0]); o.mat.emissive.setHex(c[1]);
     if (o.sprite) o.sprite.visible = e.state === 'locked'; });
@@ -706,6 +801,12 @@ function enterRoom(i) {
       notes.push('<p class="cluebox">' + (T.label !== 'none' ? '<b>' + e.sym + '</b> ' : '') + esc(e.riddle.clue) + '</p>'); });
     if (fresh.length) notes.unshift('<p class="small">' + (T.label === 'none' ? 'A clue tablet. It does not say which door it belongs to.' : 'A clue tablet. Its mark matches a door somewhere in the maze.') + '</p>'); }
   if (r.key) { r.key = false; keys++; notes.push('<p>You found a <b>master key</b>. It opens one sealed door.</p>'); }
+  if (r.find) { var f = r.find, nm = f.type === 'totem' ? C.totemName(f.key) : C.sceneryName(f.id); r.find = null; stats.finds.push(nm);
+    var rar = f.type === 'totem' ? C.finishOf(f.key).rarity : 0, nb = C.collect(f);
+    notes.push(f.type === 'totem' ? '<p>You found a totem: <b>' + esc(nm) + '</b> <span class="rar-' + rar + '">(' + C.RARITY[rar] + ')</span>. It is now in your trophy room.</p>'
+      : '<p>You found scenery for the table: <b>' + esc(nm) + '</b>. Use Decorate to place it.</p>');
+    if (rar === 3) kickLamp(0.15);
+    nb.forEach(function (b) { stats.badges.push(b); notes.push(badgeNote(b)); }); }
   refresh();
   if (i === maze.exit) return finish(true);
   if (T.oil && oil <= 0) return finish(false, 'Your lantern ran out of oil before you reached the exit.');
@@ -716,6 +817,7 @@ function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&
 
 /* ---------- Doors ---------- */
 function tapDoor(i) {
+  if (over && reviewing && maze.edges[i]) return showReview([i], 'Door ' + (i + 1));
   if (busy || over || !$('panel').hidden) return;
   var e = maze.edges[i], near; if (!e) return;
   if (e.a === cur || e.b === cur) near = cur;
@@ -729,7 +831,7 @@ function tapRoom(i) {
   var steps = routeTo(i); if (!steps) return say('That room is behind a locked door.'); walk(steps);
 }
 function openPanel(i) {
-  var e = maze.edges[i]; panelEdge = i;
+  var e = maze.edges[i]; panelEdge = i; e.seen = true;
   var sealed = e.state === 'sealed';
   $('panel-title').textContent = sealed ? 'Sealed door' : 'Locked door' + (e.sym && T.label !== 'none' ? ' · ' + e.sym : '');
   $('riddle-text').textContent = sealed ? 'This door has turned to stone. Only a master key will open it now.' : e.riddle.q;
@@ -748,6 +850,7 @@ function openPanel(i) {
 function closePanel() { $('panel').hidden = true; panelEdge = -1; $('answer').blur(); }
 function openDoor(i, viaKey) {
   var e = maze.edges[i], o = edgeObjs[i]; e.state = 'open'; stats.doors++;
+  C.doorOpened(viaKey ? null : e.riddle.id).forEach(function (b) { stats.badges.push(b); });
   if (!viaKey) { var all = load('cp-riddle-solved') || {}; var list = all[maze.tier] || []; if (list.indexOf(e.riddle.id) < 0) list.push(e.riddle.id);
     if (list.length >= window.RIDDLES[maze.tier].length) list = []; all[maze.tier] = list; store('cp-riddle-solved', all); }
   closePanel(); refresh();
@@ -760,7 +863,7 @@ function submit() {
   if (e.state !== 'locked') return;
   if (Date.now() < lockUntil) return;
   if (!v) return void ($('feedback').textContent = 'Type an answer first.');
-  if (checkAnswer(e.riddle, v, T)) { say('Correct. The door swings open.'); return openDoor(panelEdge, false); }
+  if (checkAnswer(e.riddle, v, T)) { e.answerGiven = v; say('Correct. The door swings open.'); return openDoor(panelEdge, false); }
   var norm = tokens(v).join(' ');
   if (e.wrong.indexOf(norm) >= 0) return void ($('feedback').textContent = 'You already tried that. It did not cost an attempt.');
   e.wrong.push(norm); e.tries++; stats.wrong++; $('answer').select(); kickLamp(0.12);
@@ -780,7 +883,7 @@ function checkLost() { // can the exit still be reached, counting keys held and 
   if (cost[maze.exit] > spare) finish(false, 'Every route to the exit is sealed.');
 }
 function finish(won, why) {
-  over = true; busy = false; closePanel();
+  over = true; busy = false; closePanel(); $('app').classList.add('over');
   var stars = !won ? 0 : stats.usedKey ? 1 : (stats.sealed === 0 && stats.clues <= 2) ? 3 : 2;
   $('end-title').textContent = won ? 'You escaped the maze' : 'The maze wins this time';
   $('end-stars').textContent = won ? '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars) : '';
@@ -788,19 +891,53 @@ function finish(won, why) {
   var secs = Math.round((Date.now() - stats.t0) / 1000);
   $('end-stats').innerHTML = [['Doors opened', stats.doors], ['Wrong answers', stats.wrong], ['Doors sealed', stats.sealed], ['Clues found', stats.clues],
     ['Time', Math.floor(secs / 60) + ':' + ('0' + secs % 60).slice(-2)]].map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
-  setTimeout(function () { $('end').hidden = false; }, won ? 500 : 900);
+  if (won) C.runWon({ tier: maze.tier, wrong: stats.wrong, clues: stats.clues, stars: stars, secs: secs, oil: oil === Infinity ? 99 : oil }).forEach(function (b) { stats.badges.push(b); });
+  $('end-finds').innerHTML = (stats.finds.length ? '<p class="small">Found this run: ' + stats.finds.map(esc).join('; ') + '.</p>' : '') + stats.badges.map(badgeNote).join('');
+  setTimeout(function () { if (over && !reviewing && $('app').dataset.screen === 'play') $('end').hidden = false; }, won ? 500 : 900);
 }
+
+/* ---------- After the run: collapse the results and look back over the maze ---------- */
+function floorsOf() { var fs = {}; maze.rooms.forEach(function (r) { fs[r.f] = 1; }); return Object.keys(fs).map(Number).sort(); }
+function viewY() { return reviewing ? (reviewFloor - maze.cf) * FH : roomPos(maze.rooms[cur]).y; }
+function floorLabel() { var fl = floorsOf(); $('review-floor').hidden = fl.length < 2; $('review-floor').textContent = 'Floor ' + (fl.indexOf(reviewFloor) + 1) + ' of ' + fl.length; }
+function startReview() {
+  if (!reviewing) { reviewing = true; reviewFloor = maze.rooms[cur].f; }
+  $('end').hidden = true; $('endbar').hidden = false; floorLabel(); refresh();
+  say('Look around the maze you just played. Tap any door to see its riddle and clue.');
+}
+function reviewEntry(i) {
+  var e = maze.edges[i], h = '<div class="rev"><h3>Door ' + (i + 1) + (e.sym && T.label !== 'none' ? ' \u00B7 ' + e.sym : '') + '</h3>';
+  if (!e.seen) return h + '<p class="st">You never read this door.</p></div>';
+  h += '<p class="q">' + esc(e.riddle.q) + '</p>';
+  if (e.state === 'open') h += '<p class="st">' + (e.answerGiven ? 'Solved. Your answer: <b>' + esc(e.answerGiven) + '</b>' : 'Opened with the master key. The answer stays secret.') + '</p>';
+  else h += '<p class="st">' + (e.state === 'sealed' ? 'Sealed after ' + e.tries + ' wrong answers.' : e.tries ? 'Left locked after ' + e.tries + ' wrong ' + (e.tries === 1 ? 'answer' : 'answers') + '.' : 'Read, but not answered.') + ' The answer stays secret because this riddle will come back.</p>';
+  if (e.clueRoom < 0) h += '<p class="st">This door had no clue.</p>';
+  else if (e.clueFound || e.answerGiven) h += '<p class="cluebox"><b>Clue</b> ' + esc(e.riddle.clue) + '</p>';
+  else h += '<p class="st">A clue tablet for this door was in the maze. You did not find it.</p>';
+  return h + '</div>';
+}
+function showReview(list, title) {
+  var read = list.filter(function (i) { return maze.edges[i].seen; }), unread = list.length - read.length;
+  $('review-title').textContent = title;
+  $('review-list').innerHTML = (list.length === 1 ? list : read).map(reviewEntry).join('') + (list.length > 1 && unread ? '<p class="small">' + unread + (unread === 1 ? ' door was' : ' doors were') + ' never read.</p>' : '');
+  $('review').hidden = false; $('review').scrollTop = 0;
+}
+$('end-review').onclick = startReview;
+$('show-results').onclick = function () { $('endbar').hidden = true; $('review').hidden = true; $('end').hidden = false; };
+$('open-review').onclick = function () { showReview(maze.edges.map(function (_, i) { return i; }), 'Riddles and clues'); };
+$('close-review').onclick = function () { $('review').hidden = true; };
+$('review-floor').onclick = function () { var fl = floorsOf(); reviewFloor = fl[(fl.indexOf(reviewFloor) + 1) % fl.length]; floorLabel(); refresh(); };
 function newMaze(seed) {
   T = TIERS[setup.tier]; maze = generate(setup.tier, seed === undefined ? (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0 : seed);
   cur = maze.start; keys = T.keys; oil = maze.oil; journal = []; busy = false; over = false; tweens = []; lockUntil = 0;
-  stats = { doors: 0, wrong: 0, sealed: 0, clues: 0, usedKey: false, t0: Date.now() };
-  ['panel', 'journal', 'note', 'end'].forEach(function (id) { $(id).hidden = true; });
-  maze.rooms[cur].visited = true; buildMaze(); refresh(); previewGroup.visible = false; pivot.visible = true;
+  stats = { doors: 0, wrong: 0, sealed: 0, clues: 0, usedKey: false, t0: Date.now(), finds: [], badges: [] };
+  hideAll(); reviewing = false; $('app').classList.remove('over'); C.placeFinds(maze, setup.tier);
+  maze.rooms[cur].visited = true; buildMaze(); refresh(); previewGroup.visible = false; trophyGroup.visible = false; pivot.visible = true;
   $('app').dataset.screen = 'play';
   say('Drag to move around the table, pinch to zoom, two fingers to pan. Tap a glowing door to read its riddle. The gold room is the exit.');
 }
 window.__riddleMaze.state = function () { return { maze: maze, cur: cur, keys: keys, oil: oil, stats: stats, over: over, busy: busy, journal: journal }; };
-window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze;
+window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze; window.__riddleMaze.C = C;
 
 /* ---------- Journal and buttons ---------- */
 function showJournal() {
@@ -835,13 +972,93 @@ function describe() { // closed files show the current choice
   $('d-room').textContent = label(MATS, setup.mmat) + ' maze, lamp ' + { still: 'still', sway: 'swaying', swing: 'swinging' }[setup.lamp];
 }
 function toSetup() {
-  over = true; ['panel', 'journal', 'note', 'end'].forEach(function (id) { $(id).hidden = true; });
-  $('app').dataset.screen = 'setup'; pivot.visible = false; previewGroup.visible = true; preview(); layout();
+  over = true; hideAll(); reviewing = false;
+  $('app').dataset.screen = 'setup'; pivot.visible = false; trophyGroup.visible = false; previewGroup.visible = true; preview(); layout();
   lampHook.set(0, 12, 9); lampAim.set(0, 0, 0); lampLen = 15; lamp.angle = 0.62;
 }
 chips('tiers', Object.keys(TIERS).map(function (k) { return [k, TIERS[k].name]; }), 'tier', blurb);
 chips('tokens', TOKENS, 'token', preview); chips('tmats', MATS, 'tmat', preview); chips('mmats', MATS, 'mmat'); chips('lamps', LAMPS, 'lamp');
 blurb(); describe();
+
+/* ---------- Decorating the table ---------- */
+function placed(id) { return C.data().decor.filter(function (x) { return x.id === id; }).length; }
+function renderTray() {
+  var d = C.data(), gb = $('tray-grounds'), ib = $('tray-items'); gb.innerHTML = ''; ib.innerHTML = '';
+  C.GROUNDS.forEach(function (g) { if (g[0] !== 'wood' && !d.scenery[g[0]]) return;
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = g[1]; b.setAttribute('aria-pressed', String(d.ground === g[0]));
+    b.onclick = function () { d.ground = g[0]; C.save(); buildDecor(); renderTray(); }; gb.appendChild(b); });
+  var items = C.OBJECTS.filter(function (o) { return d.scenery[o[0]]; }).map(function (o) { return [o[0], o[1], d.scenery[o[0]] - placed(o[0])]; });
+  if (d.stack.length) items.push(['stack', 'Your totem stack', 1 - placed('stack')]);
+  items.forEach(function (it) { var b = document.createElement('button'); b.type = 'button'; b.textContent = it[1] + ' \u00D7' + it[2]; b.disabled = it[2] < 1;
+    b.setAttribute('aria-pressed', String(decorPick === it[0])); b.onclick = function () { decorPick = decorPick === it[0] ? null : it[0]; renderTray(); }; ib.appendChild(b); });
+  if (decorPick && !items.some(function (it) { return it[0] === decorPick && it[2] > 0; })) decorPick = null;
+  $('tray-hint').textContent = !items.length ? 'No scenery yet. Crates of scenery turn up in maze rooms, and your totem stack can stand here once you build one in the trophy room.'
+    : decorPick ? 'Tap the table around the maze to place it. Tap a placed piece to pick it back up.' : 'Choose a piece, then tap the table around the maze. Tap a placed piece to pick it back up.';
+  $('tray-clear').disabled = !d.decor.length;
+}
+function decorTap() {
+  var d = C.data(), hits = raycaster.intersectObjects(decorPicks, false);
+  if (hits.length) { d.decor.splice(hits[0].object.userData.decor, 1); C.save(); buildDecor(); renderTray(); return say('Picked up.'); }
+  if (!decorPick) return say('Choose a piece in the tray first.');
+  var h = raycaster.intersectObject(tableTop, false)[0]; if (!h) return;
+  var p = mazeGroup.worldToLocal(h.point.clone());
+  if (Math.abs(p.x) < bsideNow / 2 + 0.4 && Math.abs(p.z) < bsideNow / 2 + 0.4) return say('Scenery goes on the table around the maze, not on the board.');
+  var a = Math.atan2(p.x, p.z), e = ringEdges(a), t = e[1] > e[0] ? Math.min(1, Math.max(0, (Math.hypot(p.x, p.z) - e[0]) / (e[1] - e[0]))) : 0;
+  d.decor.push({ id: decorPick, a: a, t: t, r: Math.random() * 6.28 });
+  var nb = C.sweep([]); buildDecor(); renderTray(); say(nb.length ? 'Badge earned: ' + C.badgeName(nb[0]) + '.' : 'Placed.');
+}
+$('open-decor').onclick = function () { if (busy) return; if (decorMode) { decorMode = false; $('tray').hidden = true; return; }
+  closePanel(); $('journal').hidden = true; $('review').hidden = true; decorMode = true; decorPick = null; renderTray(); $('tray').hidden = false; };
+$('tray-done').onclick = function () { decorMode = false; $('tray').hidden = true; };
+$('tray-clear').onclick = function () { C.data().decor = []; C.save(); buildDecor(); renderTray(); };
+
+/* ---------- Trophy room ---------- */
+var trophyTab = 'totems', trophyIdx = 0, trophyMsg = '';
+function ownedTotems() { var d = C.data(); return Object.keys(d.totems).sort(function (a, b) { return C.finishOf(b).rarity - C.finishOf(a).rarity || (a < b ? -1 : 1); }); }
+function ownedScenery() { var d = C.data(); return C.GROUNDS.concat(C.OBJECTS).map(function (x) { return x[0]; }).filter(function (id) { return d.scenery[id]; }); }
+function canStack(key) { var d = C.data(); return d.stack.length < 4 && d.stack.filter(function (k) { return k === key; }).length < d.totems[key]; }
+function showTrophy(mesh, scale) {
+  clearGroup(trophyGroup); trophyGroup.userData.t = null; if (!mesh) return;
+  var wide = canvas.clientWidth >= 820; mesh.scale.setScalar(scale * (wide ? 1.3 : 1)); trophyGroup.position.set(0, wide ? 0.6 : 0.2, 0); trophyGroup.add(mesh); trophyGroup.userData.t = mesh;
+}
+function renderTrophy() {
+  var d = C.data(), tot = ownedTotems(), sc = ownedScenery(), all = C.DESIGNS.length * C.FINISHES.length, card = $('trophy-card'), h = '';
+  var tabs = [['totems', 'Totems ' + tot.length], ['stack', 'Stack ' + d.stack.length + '/4'], ['scenery', 'Scenery ' + sc.length], ['badges', 'Badges ' + d.badges.length + '/' + C.BADGES.length]];
+  $('trophy-tabs').innerHTML = tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" aria-pressed="' + (trophyTab === t[0]) + '">' + t[1] + '</button>'; }).join('');
+  var nav = function (n) { return n > 1 ? '<button type="button" data-act="prev" aria-label="Previous">\u2190</button><button type="button" data-act="next" aria-label="Next">\u2192</button>' : ''; };
+  if (trophyTab === 'totems') {
+    if (!tot.length) { showTrophy(null); h = '<h2>No totems yet</h2><p class="small">Totems are hidden in maze rooms. Easy mazes hold common ones. Medium and Hard mazes hold more, and rarer ones, including gold.</p>'; }
+    else { trophyIdx = (trophyIdx + tot.length) % tot.length; var k = tot[trophyIdx], f = C.finishOf(k); showTrophy(C.totemMesh(k), 1.7);
+      h = '<h2>' + esc(C.totemName(k)) + '</h2><p><span class="rar-' + f.rarity + '">' + C.RARITY[f.rarity] + '</span> <span class="small">\u00B7 found ' + d.totems[k] + (d.totems[k] === 1 ? ' time' : ' times') + ' \u00B7 ' + (trophyIdx + 1) + ' of ' + tot.length + '</span></p>'
+        + '<p class="small">' + tot.length + ' of ' + all + ' different totems found.</p><div class="row">' + nav(tot.length) + '<button type="button" class="primary" data-act="add"' + (canStack(k) ? '' : ' disabled') + '>Add to stack</button></div>'; }
+  } else if (trophyTab === 'stack') {
+    showTrophy(d.stack.length ? C.stackMesh(d.stack) : null, 0.9);
+    h = '<h2>Your totem stack</h2><p class="small">' + (d.stack.length ? 'Up to four totems, in any order. Top of the stack is listed first. Use Decorate in a maze to stand the stack on the table.' : 'Empty. Open Totems and choose Add to stack. Up to four, in any order.') + '</p><ul class="slots">';
+    for (var i = d.stack.length - 1; i >= 0; i--) h += '<li><span>' + esc(C.totemName(d.stack[i])) + '</span><button type="button" data-act="up" data-i="' + i + '" aria-label="Move up"' + (i === d.stack.length - 1 ? ' disabled' : '') + '>\u2191</button><button type="button" data-act="down" data-i="' + i + '" aria-label="Move down"' + (i === 0 ? ' disabled' : '') + '>\u2193</button><button type="button" data-act="drop" data-i="' + i + '" aria-label="Remove">\u00D7</button></li>';
+    h += '</ul>';
+  } else if (trophyTab === 'scenery') {
+    if (!sc.length) { showTrophy(null); h = '<h2>No scenery yet</h2><p class="small">Crates in maze rooms hold scenery for the table: trees, stones, paths, ground covers and more.</p>'; }
+    else { trophyIdx = (trophyIdx + sc.length) % sc.length; var id = sc[trophyIdx]; showTrophy(C.sceneryMesh(id), C.isGround(id) ? 1.6 : 1.2);
+      h = '<h2>' + esc(C.sceneryName(id)) + '</h2><p class="small">' + (C.isGround(id) ? 'Ground cover for the whole table.' : 'You have ' + d.scenery[id] + '.') + ' \u00B7 ' + (trophyIdx + 1) + ' of ' + sc.length + '</p><p class="small">Place scenery with Decorate while you are in a maze.</p><div class="row">' + nav(sc.length) + '</div>'; }
+  } else {
+    showTrophy(null);
+    h = '<h2>Badges</h2><ul class="badges">' + C.BADGES.map(function (b) { return '<li' + (d.badges.indexOf(b[0]) >= 0 ? ' class="got"' : '') + '><b>' + b[1] + '</b>' + b[2] + '</li>'; }).join('') + '</ul>';
+  }
+  card.innerHTML = h + (trophyMsg ? '<p class="cluebox">' + esc(trophyMsg) + '</p>' : ''); trophyMsg = '';
+}
+$('trophy-tabs').onclick = function (ev) { var b = ev.target.closest('button'); if (!b) return; trophyTab = b.dataset.tab; trophyIdx = 0; renderTrophy(); };
+$('trophy-card').onclick = function (ev) {
+  var b = ev.target.closest('button'); if (!b || b.disabled) return; var d = C.data(), act = b.dataset.act, i = +b.dataset.i, t;
+  if (act === 'prev') trophyIdx--; else if (act === 'next') trophyIdx++;
+  else if (act === 'add') { var k = ownedTotems()[trophyIdx]; if (canStack(k)) { d.stack.push(k); trophyMsg = 'Added to the top of your stack (' + d.stack.length + ' of 4).'; } }
+  else if (act === 'up') { t = d.stack[i]; d.stack[i] = d.stack[i + 1]; d.stack[i + 1] = t; }
+  else if (act === 'down') { t = d.stack[i]; d.stack[i] = d.stack[i - 1]; d.stack[i - 1] = t; }
+  else if (act === 'drop') d.stack.splice(i, 1);
+  var nb = C.sweep([]); if (nb.length) trophyMsg = 'Badge earned: ' + C.badgeName(nb[0]) + '.';
+  renderTrophy();
+};
+$('open-trophy').onclick = function () { hideAll(); over = true; $('app').dataset.screen = 'trophy'; pivot.visible = false; previewGroup.visible = false; trophyGroup.visible = true; trophyIdx = 0; renderTrophy(); };
+$('trophy-back').onclick = function () { toSetup(); };
 
 /* ---------- Pointer handling: spin, zoom, roll, slide, tap ---------- */
 var ptrs = {}, gesture = null, raycaster = new THREE.Raycaster(), lastTap = 0;
@@ -874,9 +1091,10 @@ function release(ev) {
   var g = gesture, had = ptrs[ev.pointerId]; delete ptrs[ev.pointerId];
   if (!Object.keys(ptrs).length) gesture = null; else if (g) g.tap = false;
   if (!had || !g || !g.tap || ev.type !== 'pointerup' || Date.now() - g.t0 > 500) return;
-  var now = Date.now(); if (now - lastTap < 300) { $('recentre').onclick(); lastTap = 0; return; } lastTap = now;
+  var now = Date.now(); if (!decorMode && now - lastTap < 300) { $('recentre').onclick(); lastTap = 0; return; } lastTap = now;
   var rect = canvas.getBoundingClientRect();
   raycaster.setFromCamera({ x: (ev.clientX - rect.left) / rect.width * 2 - 1, y: -((ev.clientY - rect.top) / rect.height * 2 - 1) }, camera);
+  if (decorMode) return decorTap();
   var live = pickables.filter(function (m) { for (var o = m; o; o = o.parent) if (!o.visible) return false; return true; });
   var hits = raycaster.intersectObjects(live, false); if (!hits.length) return;
   var doorHit = hits.filter(function (h) { return h.object.userData.edge !== undefined; })[0], h = doorHit || hits[0];
@@ -894,22 +1112,23 @@ function layout() {
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   var wide = w >= 820; previewGroup.position.set(wide ? 2.6 : 8 * camera.aspect / 2 - 0.8, wide ? 0 : 3.3, 0);
 }
-window.addEventListener('resize', function () { layout(); if ($('app').dataset.screen === 'setup') preview(); });
+window.addEventListener('resize', function () { layout(); if ($('app').dataset.screen === 'setup') preview(); if ($('app').dataset.screen === 'trophy') renderTrophy(); });
 var last = performance.now();
 function frame(now) {
   var dt = Math.min(0.05, (now - last) / 1000); last = now;
   for (var i = tweens.length - 1; i >= 0; i--) { var t = tweens[i]; t.t += dt; var k = Math.min(1, t.t / t.dur);
     t.fn(k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
     if (k >= 1) { tweens.splice(i, 1); t.done && t.done(); } }
-  var setupScreen = $('app').dataset.screen === 'setup';
+  var setupScreen = $('app').dataset.screen !== 'play';
   swingLamp(dt, setupScreen);
   var d = setupScreen ? 11 : camDist * (camera.aspect < 1 ? 1 / Math.max(0.55, camera.aspect) * 0.8 : 1);
   if (setupScreen) { camera.position.set(0, 0, d); camera.lookAt(0, 0, 0); }
-  else { if (maze) camTarget.y += (roomPos(maze.rooms[cur]).y - camTarget.y) * Math.min(1, dt * 3);
+  else { if (maze) camTarget.y += (viewY() - camTarget.y) * Math.min(1, dt * 3);
     var cp = Math.cos(camPitch); camera.position.set(camTarget.x + d * cp * Math.sin(camYaw), camTarget.y + d * Math.sin(camPitch), camTarget.z + d * cp * Math.cos(camYaw)); camera.lookAt(camTarget); }
   if (setupScreen && previewGroup.userData.t) previewGroup.userData.t.rotation.y += dt * 0.7;
   var spinner = (setupScreen ? previewGroup.userData.t : token); if (spinner && spinner.userData.spin) spinner.userData.spin.rotation.y += dt * (busy ? 3 : 0.6);
-  roomObjs.forEach(function (o) { if (o.keyMesh) o.keyMesh.rotation.y += dt * 1.5; });
+  roomObjs.forEach(function (o) { if (o.keyMesh) o.keyMesh.rotation.y += dt * 1.5; if (o.findMesh) o.findMesh.rotation.y += dt * 0.9; });
+  if (trophyGroup.visible && trophyGroup.userData.t) trophyGroup.userData.t.rotation.y += dt * 0.6;
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }

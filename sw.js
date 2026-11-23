@@ -1,6 +1,6 @@
 /* Critical Puzzles offline cache. Raise VERSION whenever the app files change. */
-var VERSION = 'critical-puzzles-v5';
-var SHELL = ['./', 'index.html', 'riddles.html', 'riddles-data.js', 'three.min.js', 'manifest.webmanifest',
+var VERSION = 'critical-puzzles-v6';
+var SHELL = ['./', 'index.html', 'riddles.html', 'riddles-data.js', 'riddles-collect.js', 'three.min.js', 'manifest.webmanifest',
              'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
