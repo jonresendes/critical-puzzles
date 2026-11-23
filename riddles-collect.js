@@ -2,18 +2,15 @@
    Everything a player has found is kept on the device under one storage key. */
 window.CPCollect = function (THREE, woodTex) {
   'use strict';
-  var KEY = 'cp-riddle-collection', H = 0.62; // every totem is the same height and the same footprint
+  var KEY = 'cp-riddle-collection', H = 0.69; // every totem is the same height and the same core width
 
   /* ---------- What can be found ---------- */
   var RARITY = ['Common', 'Uncommon', 'Rare', 'Golden'];
-  var FINISHES = [
-    { id: 'wood', name: 'Carved wood', rarity: 0 }, { id: 'stone', name: 'Grey stone', rarity: 0 }, { id: 'clay', name: 'Red clay', rarity: 0 },
-    { id: 'glaze', name: 'Blue glaze', rarity: 1 }, { id: 'jade', name: 'Green jade', rarity: 1 },
-    { id: 'bronze', name: 'Bronze', rarity: 2 }, { id: 'silver', name: 'Silver', rarity: 2 },
-    { id: 'gold', name: 'Gold', rarity: 3 }];
-  var DESIGNS = [['beaver-curled', 'Beaver, tail curled'], ['beaver-behind', 'Beaver, tail behind'], ['owl-folded', 'Owl, wings folded'], ['owl-spread', 'Owl, wings stretched'],
-    ['tree', 'Tree'], ['water', 'Ball of water'], ['flame', 'Glowing flame'], ['key', 'Key'], ['lighthouse', 'Lighthouse'], ['sword', 'Sword'], ['shield', 'Shield'],
-    ['fox', 'Fox'], ['turtle', 'Turtle'], ['frog', 'Frog'], ['bear', 'Bear'], ['moon', 'Crescent moon'], ['mushroom', 'Mushroom'], ['crown', 'Crown']];
+  // Designs and finishes come from the totem factory (totem-factory.js). Rarity is set here.
+  var factory = new TotemAssetFactory(THREE), SCALE = 0.6; H = factory.CORE_HEIGHT * SCALE;
+  var RARITY_OF = { wood: 0, stone: 0, bronze: 1, jade: 1, silver: 2, resin: 2, obsidian: 2, gold: 3 };
+  var FINISHES = TotemAssetFactory.FINISH_TIERS.map(function (f) { return { id: f.id, name: f.name, rarity: RARITY_OF[f.id] || 0 }; });
+  var DESIGNS = TotemAssetFactory.TOTEM_TYPES.map(function (t) { return [t.id, t.name, t.desc]; });
   // chance of each rarity, per difficulty (percent): harder mazes hold rarer totems
   var ODDS = { E: [88, 12, 0, 0], M: [58, 30, 10, 2], H: [30, 38, 24, 8] };
   var TOTEMS_PER_MAZE = { E: [1, 0], M: [1, 0.5], H: [2, 0] }, SCENERY_PER_MAZE = { E: 2, M: 2, H: 3 }; // [certain, chance of one more]
@@ -34,6 +31,8 @@ window.CPCollect = function (THREE, woodTex) {
     d = d && typeof d === 'object' ? d : {};
     d.totems = d.totems || {}; d.scenery = d.scenery || {}; d.badges = d.badges || []; d.stack = d.stack || []; d.decor = d.decor || [];
     d.ground = d.ground || 'wood'; d.life = d.life || {}; d.life.wins = d.life.wins || { E: 0, M: 0, H: 0 }; d.life.doors = d.life.doors || 0; d.life.solved = d.life.solved || [];
+    var ok = function (k) { var p = String(k).split(':'); return DESIGNS.some(function (x) { return x[0] === p[0]; }) && FINISHES.some(function (f) { return f.id === p[1]; }); };
+    Object.keys(d.totems).forEach(function (k) { if (!ok(k)) delete d.totems[k]; }); d.stack = d.stack.filter(function (k) { return ok(k) && d.totems[k]; });
     return d;
   }
   var data = load();
@@ -41,6 +40,7 @@ window.CPCollect = function (THREE, woodTex) {
   function finishOf(key) { var id = key.split(':')[1]; return FINISHES.filter(function (f) { return f.id === id; })[0]; }
   function designName(key) { var id = key.split(':')[0]; return DESIGNS.filter(function (d) { return d[0] === id; })[0][1]; }
   function totemName(key) { return finishOf(key).name + ' · ' + designName(key); }
+  function totemDesc(key) { var id = key.split(':')[0]; return DESIGNS.filter(function (d) { return d[0] === id; })[0][2]; }
   function sceneryName(id) { return GROUNDS.concat(OBJECTS).filter(function (s) { return s[0] === id; })[0][1]; }
   function isGround(id) { return GROUNDS.some(function (g) { return g[0] === id; }); }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
@@ -91,20 +91,7 @@ window.CPCollect = function (THREE, woodTex) {
   function badgeName(id) { return BADGES.filter(function (b) { return b[0] === id; })[0][1]; }
 
   /* ---------- Materials ---------- */
-  var mats = {};
   function std(o) { var m = new THREE.MeshStandardMaterial(o); if (o.color !== undefined) m.color.convertSRGBToLinear(); if (o.emissive !== undefined) m.emissive.convertSRGBToLinear(); return m; } // colours are written as they should look on screen
-  function finishMat(id) {
-    if (mats[id]) return mats[id];
-    var m = id === 'wood' ? std({ color: 0xa9743f, map: woodTex, roughness: 0.75, envMapIntensity: 0.35 })
-      : id === 'stone' ? std({ color: 0x8d8f96, roughness: 0.95, envMapIntensity: 0.2 })
-      : id === 'clay' ? std({ color: 0xb5533c, roughness: 0.85, envMapIntensity: 0.2 })
-      : id === 'glaze' ? std({ color: 0x2f6fd0, roughness: 0.12, envMapIntensity: 0.6 })
-      : id === 'jade' ? std({ color: 0x3fae7a, roughness: 0.18, envMapIntensity: 0.6 })
-      : id === 'bronze' ? std({ color: 0xb07a3a, roughness: 0.42, metalness: 1 })
-      : id === 'silver' ? std({ color: 0xdfe3ea, roughness: 0.22, metalness: 1 })
-      : std({ color: 0xffc83a, roughness: 0.18, metalness: 1, emissive: 0x3a2600 });
-    mats[id] = m; var d = m.clone(); d.color.multiplyScalar(0.6); mats[id + '-dark'] = d; return m;
-  }
   var flat = {};
   function col(hex, extra) { var k = hex + JSON.stringify(extra || ''); if (!flat[k]) { var o = { color: hex, roughness: 0.6, envMapIntensity: 0.3 }; for (var p in extra) o[p] = extra[p]; flat[k] = std(o); } return flat[k]; }
   function put(g, geo, mat, x, y, z, rot, scl) {
@@ -115,71 +102,25 @@ window.CPCollect = function (THREE, woodTex) {
     box = function (x, y, z) { return new THREE.BoxGeometry(x, y, z); }, cone = function (r, h, s) { return new THREE.ConeGeometry(r, h, s || 12); },
     dome = function (r) { return new THREE.SphereGeometry(r, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2); };
 
-  /* ---------- Totems: squat, stackable, all 0.62 tall, standing on y = 0 and facing +z ---------- */
-  function totemMesh(key) {
-    var design = key.split(':')[0], fin = key.split(':')[1], g = new THREE.Group(), m = finishMat(fin), dk = mats[fin + '-dark'], gold = fin === 'gold';
-    var a = function (hex, extra) { return gold ? m : col(hex, extra); }; // accents turn to gold on a golden totem
-    var eye = col(0x15131d, { roughness: 0.2 });
-    var body = function () { put(g, cyl(0.42, 0.46, H), m, 0, H / 2); };
-    var eyes = function (y, dx, z, r) { put(g, sph(r || 0.05), eye, -dx, y, z); put(g, sph(r || 0.05), eye, dx, y, z); };
-    var plinth = function () { put(g, cyl(0.44, 0.46, 0.12), dk, 0, 0.06); };
-    var i, ang;
-    if (design.indexOf('beaver') === 0) {
-      body(); eyes(0.43, 0.15, 0.4); put(g, sph(0.07), dk, -0.28, 0.555, 0.1); put(g, sph(0.07), dk, 0.28, 0.555, 0.1);
-      put(g, sph(0.05), eye, 0, 0.34, 0.45); put(g, box(0.13, 0.1, 0.04), a(0xf3ecd8), 0, 0.24, 0.44);
-      if (design === 'beaver-curled') put(g, sph(0.3), dk, 0.34, 0.07, 0.36, [0, 0.8, 0], [1, 0.14, 0.62]);
-      else put(g, sph(0.3), dk, 0, 0.07, -0.62, null, [0.75, 0.14, 1.1]);
-    } else if (design.indexOf('owl') === 0) {
-      body(); [-1, 1].forEach(function (s) { put(g, cyl(0.13, 0.13, 0.03, 18), a(0xf3ecd8), s * 0.17, 0.42, 0.405, [Math.PI / 2, 0, 0]); put(g, cone(0.07, 0.16, 6), dk, s * 0.26, 0.54, 0.1); });
-      eyes(0.42, 0.17, 0.43); put(g, cone(0.05, 0.12, 8), a(0xf0a030), 0, 0.3, 0.47, [Math.PI / 2, 0, 0]);
-      if (design === 'owl-folded') [-1, 1].forEach(function (s) { put(g, sph(0.26), dk, s * 0.43, 0.28, 0, null, [0.3, 0.9, 0.75]); });
-      else [-1, 1].forEach(function (s) { put(g, box(0.44, 0.05, 0.28), dk, s * 0.66, 0.38, 0, [0, 0, s * 0.2]); put(g, box(0.16, 0.04, 0.2), dk, s * 0.9, 0.45, 0, [0, 0, s * 0.45]); });
-    } else if (design === 'tree') {
-      put(g, cyl(0.3, 0.44, H), m, 0, H / 2); put(g, sph(0.4), a(0x3f9a4f), 0, 0.52, 0, null, [1, 0.25, 1]);
-      for (i = 0; i < 6; i++) { ang = i * Math.PI / 3; put(g, cyl(0.04, 0.055, 0.34, 8), dk, Math.sin(ang) * 0.48, 0.32, Math.cos(ang) * 0.48).quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(Math.sin(ang), 0.12, Math.cos(ang)).normalize());
-        put(g, sph(0.13), a(0x3f9a4f), Math.sin(ang) * 0.7, 0.34, Math.cos(ang) * 0.7); }
-    } else if (design === 'water') {
-      put(g, cyl(0.32, 0.36, 0.06), dk, 0, 0.03); put(g, sph(0.44), a(0x3aa0e8, { roughness: 0.05, transparent: true, opacity: 0.82, envMapIntensity: 1 }), 0, 0.33, 0, null, [1, 0.66, 1]);
-      for (i = 0; i < 3; i++) { ang = i * 2.1 + 0.5; put(g, sph(0.08), a(0x8fd0ff, { roughness: 0.05 }), Math.sin(ang) * 0.5, 0.16 + i * 0.1, Math.cos(ang) * 0.5); }
-    } else if (design === 'flame') {
-      put(g, cyl(0.44, 0.34, 0.2), m, 0, 0.1);
-      put(g, cone(0.24, 0.42, 10), a(0xff7a1a, { emissive: 0xff5a00, emissiveIntensity: 1.3 }), 0, 0.41, 0);
-      put(g, cone(0.14, 0.3, 10), a(0xffd24a, { emissive: 0xffb000, emissiveIntensity: 1.5 }), 0.12, 0.35, 0.09); put(g, cone(0.12, 0.26, 10), a(0xffd24a, { emissive: 0xffb000, emissiveIntensity: 1.5 }), -0.13, 0.33, -0.05);
-    } else if (design === 'key') {
-      plinth(); put(g, new THREE.TorusGeometry(0.11, 0.04, 10, 20), m, 0, 0.47, 0); put(g, box(0.07, 0.26, 0.05), m, 0, 0.25, 0); put(g, box(0.12, 0.05, 0.05), m, 0.08, 0.16, 0); put(g, box(0.1, 0.05, 0.05), m, 0.07, 0.25, 0);
-    } else if (design === 'lighthouse') {
-      put(g, cyl(0.3, 0.4, 0.14), m, 0, 0.07); put(g, cyl(0.26, 0.3, 0.14), a(0xf3ecd8), 0, 0.21); put(g, cyl(0.22, 0.26, 0.14), m, 0, 0.35); put(g, cyl(0.27, 0.27, 0.03), dk, 0, 0.435);
-      put(g, cyl(0.15, 0.15, 0.1, 10), a(0xfff0a0, { emissive: 0xffd040, emissiveIntensity: 1.6 }), 0, 0.5); put(g, cone(0.2, 0.07), m, 0, 0.585);
-    } else if (design === 'sword') {
-      plinth(); put(g, box(0.09, 0.34, 0.03), a(0xdfe3ea, { metalness: 1, roughness: 0.2 }), 0, 0.29, 0); put(g, box(0.32, 0.045, 0.07), m, 0, 0.47, 0); put(g, cyl(0.03, 0.03, 0.09, 10), dk, 0, 0.535, 0); put(g, sph(0.04), m, 0, 0.58, 0);
-    } else if (design === 'shield') {
-      plinth(); put(g, cyl(0.24, 0.24, 0.07, 6), m, 0, 0.38, 0, [Math.PI / 2, 0, 0]); put(g, sph(0.07), dk, 0, 0.38, 0.05); put(g, box(0.04, 0.36, 0.02), dk, 0, 0.38, 0.04); put(g, box(0.36, 0.04, 0.02), dk, 0, 0.38, 0.04);
-    } else if (design === 'fox') {
-      body(); eyes(0.44, 0.15, 0.39); [-1, 1].forEach(function (s) { put(g, cone(0.09, 0.18, 4), dk, s * 0.24, 0.53, 0.05); });
-      put(g, cone(0.13, 0.26, 10), a(0xf3ecd8), 0, 0.3, 0.5, [Math.PI / 2, 0, 0]); put(g, sph(0.04), eye, 0, 0.3, 0.63);
-      put(g, sph(0.2), m, 0.2, 0.17, -0.5, null, [0.8, 0.8, 1.3]); put(g, sph(0.1), a(0xf3ecd8), 0.24, 0.2, -0.72);
-    } else if (design === 'turtle') {
-      put(g, cyl(0.44, 0.46, 0.16), m, 0, 0.08); put(g, dome(0.44), dk, 0, 0.16, 0, null, [1, 1.045, 1]); put(g, sph(0.13), m, 0, 0.2, 0.5);
-      put(g, sph(0.035), eye, -0.06, 0.25, 0.6); put(g, sph(0.035), eye, 0.06, 0.25, 0.6);
-      [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(function (s) { put(g, sph(0.1), m, s[0] * 0.38, 0.06, s[1] * 0.34, null, [1, 0.6, 1]); });
-    } else if (design === 'frog') {
-      body(); [-1, 1].forEach(function (s) { put(g, sph(0.1), m, s * 0.2, 0.52, 0.26); put(g, sph(0.045), eye, s * 0.2, 0.54, 0.34); put(g, sph(0.12), dk, s * 0.3, 0.05, 0.42, null, [1, 0.4, 1.3]); });
-      put(g, box(0.5, 0.02, 0.03), eye, 0, 0.3, 0.44);
-    } else if (design === 'bear') {
-      body(); eyes(0.44, 0.15, 0.4); [-1, 1].forEach(function (s) { put(g, sph(0.09), dk, s * 0.27, 0.53, 0.05); });
-      put(g, sph(0.14), a(0xe8d2b0), 0, 0.28, 0.42, null, [1, 0.8, 0.7]); put(g, sph(0.045), eye, 0, 0.32, 0.52);
-    } else if (design === 'moon') {
-      plinth(); put(g, new THREE.TorusGeometry(0.18, 0.06, 10, 24, Math.PI * 1.25), m, 0, 0.38, 0, [0, 0, 0.9]); put(g, sph(0.035), a(0xfff0a0, { emissive: 0xffd040, emissiveIntensity: 1 }), 0.1, 0.42, 0.02);
-    } else if (design === 'mushroom') {
-      put(g, cyl(0.18, 0.22, 0.3), a(0xf3ecd8), 0, 0.15); put(g, dome(0.46), m, 0, 0.28, 0, null, [1, 0.74, 1]);
-      for (i = 0; i < 5; i++) { ang = i * 1.257; put(g, sph(0.05), a(0xffffff), Math.sin(ang) * 0.27, 0.53, Math.cos(ang) * 0.27); }
-    } else { // crown
-      put(g, cyl(0.42, 0.44, 0.3), m, 0, 0.15);
-      for (i = 0; i < 6; i++) { ang = i * Math.PI / 3; put(g, cone(0.09, 0.3, 4), m, Math.sin(ang) * 0.33, 0.45, Math.cos(ang) * 0.33); put(g, sph(0.045), a(0xd0304a, { roughness: 0.15 }), Math.sin(ang) * 0.43, 0.17, Math.cos(ang) * 0.43); }
-    }
-    return g;
+  /* ---------- Totems: built by TotemAssetFactory, scaled to suit the maze ----------
+     The factory writes colours as they should look on screen; this renderer needs them converted once. */
+  Object.keys(factory.textures).forEach(function (k) { factory.textures[k].encoding = THREE.sRGBEncoding; });
+  function tune(root) {
+    root.traverse(function (o) {
+      if (!o.isMesh) return; var m = o.material;
+      if (!m.userData.tuned && !m.isMeshBasicMaterial) { m.userData.tuned = true; if (m.color) m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear(); if (m.envMapIntensity !== undefined && !m.metalness) m.envMapIntensity = 0.4; }
+      o.castShadow = o.receiveShadow = !m.transparent;
+    });
   }
-  function stackMesh(keys) { var g = new THREE.Group(); keys.forEach(function (k, i) { var t = totemMesh(k); t.position.y = i * (H + 0.01); g.add(t); }); return g; }
+  function wrap(inner, update) { tune(inner); inner.scale.setScalar(SCALE); var g = new THREE.Group(); g.add(inner); g.userData.update = update; return g; }
+  function totemMesh(key) {
+    var p = key.split(':'), piece = factory.createTotemPiece(p[0], p[1]), an = piece.userData.animators || [];
+    return wrap(piece, function (t) { for (var i = 0; i < an.length; i++) an[i](t); });
+  }
+  function stackMesh(keys) { // the factory's own stack: pedestal base, then up to four totems, bottom first
+    var st = factory.createTotemStack(keys.map(function (k) { return { type: k.split(':')[0], finish: k.split(':')[1] }; }));
+    return wrap(st, st.userData.update);
+  }
 
   /* ---------- Scenery for the table ---------- */
   var groundTex = {};
@@ -226,7 +167,7 @@ window.CPCollect = function (THREE, woodTex) {
 
   return { H: H, RARITY: RARITY, FINISHES: FINISHES, DESIGNS: DESIGNS, GROUNDS: GROUNDS, OBJECTS: OBJECTS, BADGES: BADGES, ODDS: ODDS,
     data: function () { return data; }, save: save, reload: function () { data = load(); return data; },
-    totemName: totemName, sceneryName: sceneryName, isGround: isGround, finishOf: finishOf, badgeName: badgeName,
+    totemName: totemName, totemDesc: totemDesc, sceneryName: sceneryName, isGround: isGround, finishOf: finishOf, badgeName: badgeName,
     rollTotem: rollTotem, placeFinds: placeFinds, collect: collect, doorOpened: doorOpened, runWon: runWon, sweep: sweep,
     totemMesh: totemMesh, stackMesh: stackMesh, sceneryMesh: sceneryMesh, crateMesh: crateMesh, groundTexture: groundTexture };
 };
