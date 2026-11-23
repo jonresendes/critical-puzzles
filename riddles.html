@@ -716,6 +716,7 @@ function buildMaze() {
   var legH = 9, stem = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.16, tableR * 0.26, legH, 24), walnut); stem.position.y = boardY - 0.8 - legH / 2; stem.userData.board = true; mazeGroup.add(stem);
   var foot = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.5, tableR * 0.58, 0.7, 48), walnut); foot.position.y = boardY - 0.8 - legH - 0.35; foot.userData.board = true; mazeGroup.add(foot);
   mazeGroup.traverse(function (o) { if (!o.isMesh) return; o.receiveShadow = true; o.castShadow = !o.userData.board && !Array.isArray(o.material) && o.material.depthWrite !== false; });
+  top.castShadow = true; // the table top is solid: it blocks the lamp, so nothing below it is lit or carries the maze's shadow
   if (token) mazeGroup.remove(token);
   token = buildToken(setup.token, setup.tmat); token.scale.setScalar(1.15); mazeGroup.add(token);
   token.traverse(function (o) { if (o.isMesh && !o.material.transparent) { o.castShadow = true; o.receiveShadow = true; } });
@@ -821,7 +822,14 @@ function tapRoom(i) {
   if (busy || over || !$('panel').hidden || i === cur) return;
   var steps = routeTo(i); if (!steps) return say('That room is behind a locked door.'); walk(steps);
 }
+function faceDoor(i) { // turn the token towards the door it is dealing with
+  var e = maze.edges[i], here = roomPos(maze.rooms[cur]), there = e.vertical ? edgeObjs[i].way[0] : roomPos(maze.rooms[e.a === cur ? e.b : e.a]);
+  var dx = there.x - here.x, dz = there.z - here.z; if (Math.abs(dx) + Math.abs(dz) < 0.01) return;
+  var from = token.rotation.y, turn = Math.atan2(dx, dz) - from; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+  tween(0.25, function (k) { token.rotation.y = from + turn * k; });
+}
 function openPanel(i) {
+  faceDoor(i);
   var e = maze.edges[i]; panelEdge = i; e.seen = true;
   var sealed = e.state === 'sealed';
   $('panel-title').textContent = sealed ? 'Sealed door' : 'Locked door' + (e.sym && T.label !== 'none' ? ' · ' + e.sym : '');
@@ -928,7 +936,7 @@ function newMaze(seed) {
   say('Drag to move around the table, pinch to zoom, two fingers to pan. Tap a glowing door to read its riddle. The gold room is the exit.');
 }
 window.__riddleMaze.state = function () { return { maze: maze, cur: cur, keys: keys, oil: oil, stats: stats, over: over, busy: busy, journal: journal }; };
-window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze; window.__riddleMaze.C = C;
+window.__riddleMaze.table = function () { return tableTop; }; window.__riddleMaze.tokenYaw = function () { return Math.atan2(Math.sin(token.rotation.y), Math.cos(token.rotation.y)); }; window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze; window.__riddleMaze.C = C;
 
 /* ---------- Journal and buttons ---------- */
 function showJournal() {
