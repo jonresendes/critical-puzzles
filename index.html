@@ -322,6 +322,20 @@ input[type="color"] {
           <span class="go">Play</span>
         </a>
       </li>
+      <li>
+        <a class="game btn" id="open-strongbox" href="strongbox.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#d2a469"></i><i style="--c:#d2a469"></i><i style="--c:#d2a469"></i>
+            <i style="--c:#d2a469"></i><i style="--c:#15131d"></i><i style="--c:#d2a469"></i>
+            <i style="--c:#5fd0a0"></i><i style="--c:#f0b03a"></i><i style="--c:#f0b03a"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Strongbox</span>
+            <span class="desc">Words, numbers, logic and pieces to move. Every solve earns a clue to the code.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
     </ul>
     <div class="homerow">
       <button id="install" type="button">Install app</button>
@@ -466,11 +480,11 @@ input[type="color"] {
 </div>
 </details>
 <details class="file">
-<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 05</span><span class="fname">The app</span><span class="fdesc">Version and updates</span></span></summary>
+<summary><span class="lock" aria-hidden="true"></span><span class="ft"><span class="kick">File 05</span><span class="fname">The app</span><span class="fdesc">Version, updates and bug reports</span></span></summary>
 <div class="fbody">
 <div class="group">
 <p class="hint" id="upd-version"></p>
-<div class="row"><button id="upd-check" type="button">Check for update</button></div>
+<div class="row"><button id="upd-check" type="button">Check for update</button><button type="button" data-bug-open>&#128030; Report a bug</button></div>
 <p class="hint" id="upd-status" role="status" aria-live="polite"></p>
 </div>
 </div>
@@ -522,7 +536,7 @@ input[type="color"] {
   var renderer;
   try {
     if (!window.THREE) throw new Error('no three');
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
   } catch (err) {
     document.querySelector('#home .lede').textContent =
       'This browser could not start 3D graphics. Turn on WebGL or try another browser.';
@@ -2396,5 +2410,6 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
 </script>
+<script src="bugreport.js"></script>
 </body>
 </html>

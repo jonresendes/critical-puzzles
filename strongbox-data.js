@@ -1,0 +1,110 @@
+/* Strongbox puzzle repository.
+   t: tier (E easy, M medium, H hard). c: category (math, words, logic, story).
+   a: accepted answers (numbers may be typed as digits or words). kw: keywords that count if the answer contains one.
+   Tiers never share a puzzle. Add rows freely: the game reads this list directly. */
+window.CP_PUZZLES = [
+/* ---------- Easy: numbers ---------- */
+{ id: 'EM01', t: 'E', c: 'math', q: 'What number comes next?\n2, 4, 8, 16, __', a: ['32'] },
+{ id: 'EM02', t: 'E', c: 'math', q: 'I am a number. Double me, add 6, and you get 20. What am I?', a: ['7'] },
+{ id: 'EM03', t: 'E', c: 'math', q: 'A spider has 8 legs and a beetle has 6. How many legs do 3 spiders and 2 beetles have altogether?', a: ['36'] },
+{ id: 'EM04', t: 'E', c: 'math', q: 'What number comes next?\n1, 4, 9, 16, __', a: ['25'] },
+{ id: 'EM05', t: 'E', c: 'math', q: 'Half of a number is 5 more than 10. What is the number?', a: ['30'] },
+{ id: 'EM06', t: 'E', c: 'math', q: 'A baker puts 12 buns on each tray. She fills 4 trays and has 5 buns left over. How many buns did she bake?', a: ['53'] },
+{ id: 'EM07', t: 'E', c: 'math', q: 'What number comes next?\n3, 6, 10, 15, __', a: ['21'] },
+{ id: 'EM08', t: 'E', c: 'math', q: 'How many minutes are there in two and a half hours?', a: ['150'] },
+/* ---------- Easy: words ---------- */
+{ id: 'EW01', t: 'E', c: 'words', q: 'Unscramble these letters to name an animal:\nT G I R E', a: ['tiger'] },
+{ id: 'EW02', t: 'E', c: 'words', q: 'Which word can go in front of BALL, PRINT and STEP to make three new words?', a: ['foot'] },
+{ id: 'EW03', t: 'E', c: 'words', q: 'Which word becomes shorter when you add two letters to it?', a: ['short'] },
+{ id: 'EW04', t: 'E', c: 'words', q: 'Unscramble these letters to name a fruit:\nL P A E P', a: ['apple'] },
+{ id: 'EW05', t: 'E', c: 'words', q: 'Which word is the odd one out?\ncarrot, potato, banana, onion, turnip', a: ['banana'] },
+{ id: 'EW06', t: 'E', c: 'words', q: 'Change one letter of COLD to make a precious metal.', a: ['gold'] },
+{ id: 'EW07', t: 'E', c: 'words', q: 'Read TFEL backwards. What is the opposite of that word?', a: ['right'] },
+{ id: 'EW08', t: 'E', c: 'words', q: 'Which word can follow SUN, STAR and GOLD to make three sea creatures?', a: ['fish'] },
+/* ---------- Easy: logic ---------- */
+{ id: 'EL01', t: 'E', c: 'logic', q: 'Ana is taller than Ben. Ben is taller than Cy. Who is the shortest?', a: ['cy'] },
+{ id: 'EL02', t: 'E', c: 'logic', q: 'Tomorrow will be Saturday. What day was yesterday?', a: ['thursday'] },
+{ id: 'EL03', t: 'E', c: 'logic', q: 'A farmer has 5 haystacks in one field and 4 in another. He piles them all together. How many haystacks does he have now?', a: ['1'] },
+{ id: 'EL04', t: 'E', c: 'logic', q: 'Some months have 31 days and some have 30. How many months have 28 days?', a: ['12'], kw: ['all'] },
+{ id: 'EL05', t: 'E', c: 'logic', q: 'Three boxes sit in a row: one red, one blue, one green. The red box is in the middle. The green box is not on the right. Which colour is on the right?', a: ['blue'] },
+{ id: 'EL06', t: 'E', c: 'logic', q: "Mia's mother has three children. The first two are called April and May. What is the third child called?", a: ['mia'] },
+{ id: 'EL07', t: 'E', c: 'logic', q: 'You are running a race and you overtake the runner in second place. What place are you in now?', a: ['second', '2nd', '2'] },
+{ id: 'EL08', t: 'E', c: 'logic', q: 'Two fathers and two sons go fishing. Each catches exactly one fish, and they bring home three fish in total. How many people went fishing?', a: ['3'] },
+/* ---------- Easy: stories ---------- */
+{ id: 'ES01', t: 'E', c: 'story', q: 'The bakery. Lena buys 3 muffins at $2 each and a loaf for $4. She pays with a $20 bill. How many dollars does she get back?', a: ['10'] },
+{ id: 'ES02', t: 'E', c: 'story', q: 'The cowboy. A cowboy rides into town on Friday, stays three days, and rides out on Friday. How is that possible?', a: ['horse is named friday'], kw: ['horse'] },
+{ id: 'ES03', t: 'E', c: 'story', q: 'The station. A train leaves at 9:40 and the trip takes 45 minutes. What time does it arrive? (Answer like 8:15)', a: ['10:25'] },
+{ id: 'ES04', t: 'E', c: 'story', q: 'The ladder. A painter falls off a 10-metre ladder and is not hurt at all. How?', a: ['bottom rung'], kw: ['bottom', 'first rung', 'first step', 'lowest', 'low'] },
+{ id: 'ES05', t: 'E', c: 'story', q: 'The picnic. Sam packs 24 sandwiches. Each of 5 friends eats 4, and Sam eats the rest. How many does Sam eat?', a: ['4'] },
+{ id: 'ES06', t: 'E', c: 'story', q: 'The storm. A man walks through pouring rain with no umbrella, hat or hood. His clothes are soaked, but not a single hair on his head gets wet. How?', a: ['bald'], kw: ['bald', 'no hair', 'hairless'] },
+{ id: 'ES07', t: 'E', c: 'story', q: 'The bus. A bus starts with 12 riders. At the first stop 5 get off and 3 get on. At the second stop 4 get off and 6 get on. How many riders are on the bus now?', a: ['12'] },
+
+/* ---------- Medium: numbers ---------- */
+{ id: 'MM01', t: 'M', c: 'math', q: 'What number comes next?\n1, 1, 2, 3, 5, 8, 13, __', a: ['21'] },
+{ id: 'MM02', t: 'M', c: 'math', q: 'A bat and a ball cost $1.10 together. The bat costs exactly $1.00 more than the ball. How many cents does the ball cost?', a: ['5'] },
+{ id: 'MM03', t: 'M', c: 'math', q: 'What number comes next?\n2, 6, 12, 20, 30, __', a: ['42'] },
+{ id: 'MM04', t: 'M', c: 'math', q: 'Three consecutive whole numbers add up to 72. What is the largest of the three?', a: ['25'] },
+{ id: 'MM05', t: 'M', c: 'math', q: 'A clock takes 5 seconds to strike six o\'clock: six evenly spaced strikes, timed from the first to the last. How many seconds does it take to strike twelve o\'clock?', a: ['11'] },
+{ id: 'MM06', t: 'M', c: 'math', q: 'I am a two-digit number. My digits add up to 9, and writing me backwards makes a number 27 bigger. What am I?', a: ['36'] },
+{ id: 'MM07', t: 'M', c: 'math', q: 'What number comes next?\n1, 2, 6, 24, 120, __', a: ['720'] },
+{ id: 'MM08', t: 'M', c: 'math', q: 'A snail climbs a 10-metre wall. Each day it climbs 3 metres, and each night it slides back 2. On which day does it first reach the top?', a: ['8', '8th', 'eighth'] },
+/* ---------- Medium: words ---------- */
+{ id: 'MW01', t: 'M', c: 'words', q: 'Rearrange all the letters of LISTEN to make a word meaning quiet.', a: ['silent'] },
+{ id: 'MW02', t: 'M', c: 'words', q: 'One word can go in front of each of these to make three new words or phrases:\nHOUSE, BULB, YEAR', a: ['light'] },
+{ id: 'MW03', t: 'M', c: 'words', q: 'Take one letter away from a five-letter word meaning "begin" and you are left with a small pie. What is the pie?', a: ['tart'] },
+{ id: 'MW04', t: 'M', c: 'words', q: 'Which five-letter word reads the same forwards and backwards and means "flat and even"?', a: ['level'] },
+{ id: 'MW05', t: 'M', c: 'words', q: 'Rearrange all the letters of NIGHT to make another everyday word.', a: ['thing'] },
+{ id: 'MW06', t: 'M', c: 'words', q: 'An animal is hiding across the words of this sentence. Which one?\n"She came late to the party."', a: ['camel'] },
+{ id: 'MW07', t: 'M', c: 'words', q: 'One letter goes in front of all three to make three words. Which letter?\n_RAIN, _LOCK, _EAR', a: ['b'] },
+/* ---------- Medium: logic ---------- */
+{ id: 'ML01', t: 'M', c: 'logic', q: 'Five runners finish a race: Ava, Ben, Cal, Dee and Eli. Ava finished right behind Dee. Eli finished ahead of Ben but behind Ava. Ben beat Cal. Who came third?', a: ['eli'] },
+{ id: 'ML02', t: 'M', c: 'logic', q: 'Three boxes are labelled "Apples", "Oranges" and "Apples and Oranges". Every label is wrong. You may take out one fruit from one box, without looking inside. Which label should you pick from to work out all three boxes?', a: ['apples and oranges'], kw: ['and oranges', 'mixed', 'both'] },
+{ id: 'ML03', t: 'M', c: 'logic', q: 'A drawer holds 10 black socks and 10 white socks. In the dark, how many socks must you take out to be certain of a matching pair?', a: ['3'] },
+{ id: 'ML04', t: 'M', c: 'logic', q: 'A man points at a portrait and says: "Brothers and sisters I have none, but that man\'s father is my father\'s son." Who is in the portrait?', a: ['his son', 'son', 'the mans son'], kw: ['his son', 'own son'] },
+{ id: 'ML05', t: 'M', c: 'logic', q: 'You have 9 coins that look identical. One is slightly heavier. With a balance scale, what is the fewest weighings that will always find it?', a: ['2'] },
+{ id: 'ML06', t: 'M', c: 'logic', q: 'The day after tomorrow is two days before Sunday. What day is it today?', a: ['wednesday'] },
+{ id: 'ML07', t: 'M', c: 'logic', q: 'Al says: "Bo is lying." Bo says: "Cy is lying." Cy says: "Al and Bo are both lying." Only one of the three is telling the truth. Who?', a: ['bo'] },
+/* ---------- Medium: stories ---------- */
+{ id: 'MS01', t: 'M', c: 'story', q: 'The lift. A woman lives on the 12th floor. Each morning she rides the lift down to the ground. Coming home, she rides only to the 7th floor and climbs the stairs, unless it is raining, when she rides all the way up. Why?', a: ['too short to reach the button'], kw: ['short', 'reach', 'umbrella', 'small', 'tall', 'height', 'child'] },
+{ id: 'MS02', t: 'M', c: 'story', q: 'The market. A trader buys a vase for $60, sells it for $70, buys it back for $80, and sells it again for $90. How many dollars of profit did she make?', a: ['20'] },
+{ id: 'MS03', t: 'M', c: 'story', q: 'The orchard. Ali takes half the apples in a basket plus half an apple. Bea takes half of what is left plus half an apple. Cy does the same, and the basket is empty. No apple was ever cut. How many apples were there at the start?', a: ['7'] },
+{ id: 'MS04', t: 'M', c: 'story', q: 'The hotel. A man pushes his car up to a hotel and tells the owner he is bankrupt. Nobody is surprised. What is going on?', a: ['monopoly'], kw: ['monopoly', 'board game'] },
+{ id: 'MS05', t: 'M', c: 'story', q: 'The ferry. A farmer must row a wolf, a goat and a cabbage across a river. The boat holds him and one of them. Left alone, the wolf eats the goat and the goat eats the cabbage. What is the fewest crossings he needs?', a: ['7'] },
+{ id: 'MS06', t: 'M', c: 'story', q: 'The will. A merchant leaves 17 camels: half to the eldest child, a third to the second, a ninth to the youngest. A neighbour lends one camel so the sharing works, then takes hers home. How many camels does the eldest receive?', a: ['9'] },
+{ id: 'MS07', t: 'M', c: 'story', q: 'The clockmaker. A broken clock loses 10 minutes every hour. It is set correctly at noon. What time does it show when the real time is 6 p.m.? (Answer like 4:30)', a: ['5:00', '5', '5 pm', '5 oclock', '5 p m'] },
+
+/* ---------- Hard: numbers ---------- */
+{ id: 'HM01', t: 'H', c: 'math', q: 'What comes next?\n1, 11, 21, 1211, 111221, __', a: ['312211'] },
+{ id: 'HM02', t: 'H', c: 'math', q: 'If 5 machines take 5 minutes to make 5 widgets, how many minutes do 100 machines take to make 100 widgets?', a: ['5'] },
+{ id: 'HM03', t: 'H', c: 'math', q: 'A patch of lily pads doubles in size every day. On day 48 it covers the whole pond. On which day did it cover half the pond?', a: ['47'] },
+{ id: 'HM04', t: 'H', c: 'math', q: 'What is the smallest whole number that leaves a remainder of 1 when divided by 2, 3, 4, 5 or 6, and divides exactly by 7?', a: ['301'] },
+{ id: 'HM05', t: 'H', c: 'math', q: 'Three different positive whole numbers give the same result whether you add all three or multiply all three. What is that result?', a: ['6'] },
+{ id: 'HM06', t: 'H', c: 'math', q: 'What number comes next?\n4, 6, 9, 6, 14, 6, __', a: ['19'] },
+{ id: 'HM07', t: 'H', c: 'math', q: 'A father is four times as old as his daughter. In 20 years he will be exactly twice her age. How old is the father now?', a: ['40'] },
+{ id: 'HM08', t: 'H', c: 'math', q: 'Starting at noon and counting noon itself, how many times do the hands of a clock lie exactly on top of each other before midnight strikes?', a: ['11'] },
+/* ---------- Hard: words ---------- */
+{ id: 'HW01', t: 'H', c: 'words', q: 'Name an English word that uses each of the five vowels exactly once, in alphabetical order.', a: ['facetious', 'abstemious', 'arsenious', 'facetiously', 'abstemiously'] },
+{ id: 'HW02', t: 'H', c: 'words', q: 'Rearrange all the letters of DORMITORY into two words that describe one.', a: ['dirty room'] },
+{ id: 'HW03', t: 'H', c: 'words', q: 'A nine-letter word stays a real word each time you remove one letter, all the way down to a single letter. It starts with S and ends with G. What is it?', a: ['startling'] },
+{ id: 'HW04', t: 'H', c: 'words', q: 'A country is hiding across the words of this sentence. Which one?\n"I have never seen such a display."', a: ['chad'] },
+{ id: 'HW05', t: 'H', c: 'words', q: 'Rearrange all the letters of THE EYES into two words that say what they do.', a: ['they see'] },
+{ id: 'HW06', t: 'H', c: 'words', q: 'Every letter of a word was moved one place forward in the alphabet, and Z became A. The result is QVAAMF. What was the word?', a: ['puzzle'] },
+{ id: 'HW07', t: 'H', c: 'words', q: 'One word goes in front of all three:\n___CASTLE, ___PAPER, ___STORM', a: ['sand'] },
+{ id: 'HW08', t: 'H', c: 'words', q: 'Which five-letter word is pronounced exactly the same after you remove four of its letters?', a: ['queue'] },
+/* ---------- Hard: logic ---------- */
+{ id: 'HL01', t: 'H', c: 'logic', q: 'You have 12 coins that look identical. One is a fake that is either heavier or lighter, and you do not know which. With a balance scale, what is the fewest weighings that will always find the fake?', a: ['3'] },
+{ id: 'HL02', t: 'H', c: 'logic', q: 'A hallway has 100 closed lockers. Student 1 opens every locker. Student 2 then flips every 2nd locker, student 3 every 3rd, and so on up to student 100. How many lockers are open at the end?', a: ['10'] },
+{ id: 'HL03', t: 'H', c: 'logic', q: 'Ada says: "Exactly one of us is lying." Bea says: "Exactly two of us are lying." Cal says: "All three of us are lying." Who is telling the truth?', a: ['bea'] },
+{ id: 'HL04', t: 'H', c: 'logic', q: 'Four people must cross a bridge at night with one torch. The bridge holds two at a time, and the torch must be carried on every crossing. They take 1, 2, 5 and 10 minutes, and a pair walks at the slower pace. What is the fastest all four can cross, in minutes?', a: ['17'] },
+{ id: 'HL05', t: 'H', c: 'logic', q: 'A mother tells a census taker: "I have three daughters. Their ages multiply to 36 and add up to the number on the house next door." He looks at the number and says he still cannot tell. She adds: "My eldest plays the piano." How old is the eldest?', a: ['9'] },
+{ id: 'HL06', t: 'H', c: 'logic', q: 'Two ropes each take exactly 60 minutes to burn, but they burn unevenly. You light rope A at both ends and rope B at one end. The moment A is gone, you light the other end of B. How many minutes after the start does B burn out?', a: ['45'] },
+{ id: 'HL07', t: 'H', c: 'logic', q: 'A king has 1000 bottles of wine and knows exactly one is poisoned. The poison takes just under 24 hours to act, and the feast is in 24 hours. What is the fewest tasters he needs to be sure of finding the bottle in time?', a: ['10'] },
+/* ---------- Hard: stories ---------- */
+{ id: 'HS01', t: 'H', c: 'story', q: 'The inn. Three travellers pay $30 for a room. The clerk finds the price should be $25 and sends the porter back with $5. The porter keeps $2 and hands each traveller $1. Each has now paid $9, which makes $27, and the porter has $2, which makes $29. How many dollars are actually missing?', a: ['0', 'none', 'nothing', 'no dollars'] },
+{ id: 'HS02', t: 'H', c: 'story', q: 'The bee. Two trains start 200 km apart and head toward each other, each at 50 km/h. A bee flies back and forth between them at 75 km/h until they meet. How many kilometres does the bee fly?', a: ['150'] },
+{ id: 'HS03', t: 'H', c: 'story', q: 'The diary. In a coded diary, MONDAY is written NPOEBZ. How is FRIDAY written?', a: ['gsjebz'] },
+{ id: 'HS04', t: 'H', c: 'story', q: 'The birthday. Someone says: "The day before yesterday I was 25, and next year I will turn 28." On what date is their birthday? (Give the day and the month.)', a: ['december 31', '31 december', 'dec 31', '31 dec', 'december 31st', '31st december', '31st of december', '31 12', '12 31'] },
+{ id: 'HS05', t: 'H', c: 'story', q: 'The jeweller. A jeweller has four pieces of chain with three links each. She wants to join them into one closed loop of twelve links. What is the fewest links she must cut open?', a: ['3'] },
+{ id: 'HS06', t: 'H', c: 'story', q: 'The kitchen. You have a 4-minute hourglass and a 7-minute hourglass and want to boil an egg for exactly 9 minutes. Counting from the first flip to the moment the egg is done, what is the shortest total time you need, in minutes?', a: ['9'] },
+{ id: 'HS07', t: 'H', c: 'story', q: 'The forest. The lion lies on Mondays, Tuesdays and Wednesdays. The unicorn lies on Thursdays, Fridays and Saturdays. On other days each tells the truth. Today both say: "Yesterday I was lying." What day is it?', a: ['thursday'] }
+];
