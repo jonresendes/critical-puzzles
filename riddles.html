@@ -611,7 +611,7 @@ function buildToken(kind, matKind) {
 }
 
 /* ---------- Collectables: totems, scenery, badges (see riddles-collect.js) ---------- */
-var C = window.CPCollect(THREE, woodTex);
+var C = window.CPCollect(THREE, woodTex, renderer);
 var decorMode = false, decorPick = null, decorGroup = null, decorPicks = [], tableTop = null, tableMats = null, bsideNow = 0;
 var reviewing = false, reviewFloor = 0, trophyGroup = new THREE.Group(); scene.add(trophyGroup); trophyGroup.visible = false;
 function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tray'].forEach(function (id) { $(id).hidden = true; }); decorMode = false; }
@@ -742,7 +742,7 @@ function buildDecor() {
   d.decor = d.decor.filter(function (it) { return it.id !== 'stack' || d.stack.length; });
   d.decor.forEach(function (it, i) {
     var m = it.id === 'stack' ? C.stackMesh(d.stack) : C.sceneryMesh(it.id), e = ringEdges(it.a), r = e[0] + it.t * (e[1] - e[0]);
-    m.position.set(Math.sin(it.a) * r, 0, Math.cos(it.a) * r); m.rotation.y = it.r || 0; m.scale.setScalar(it.id === 'stack' ? 1 : 1.5);
+    m.position.set(Math.sin(it.a) * r, 0, Math.cos(it.a) * r); m.rotation.y = it.r || 0; m.scale.setScalar(it.id === 'stack' ? 1.4 : 1.5);
     m.traverse(function (o) { if (o.isMesh) { o.userData.decor = i; decorPicks.push(o); } }); decorGroup.add(m);
   });
   var cap = tableMats[0];
@@ -1028,12 +1028,12 @@ function renderTrophy() {
   $('trophy-tabs').innerHTML = tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" aria-pressed="' + (trophyTab === t[0]) + '">' + t[1] + '</button>'; }).join('');
   var nav = function (n) { return n > 1 ? '<button type="button" data-act="prev" aria-label="Previous">\u2190</button><button type="button" data-act="next" aria-label="Next">\u2192</button>' : ''; };
   if (trophyTab === 'totems') {
-    if (!tot.length) { showTrophy(null); h = '<h2>No totems yet</h2><p class="small">Totems are hidden in maze rooms. Easy mazes hold common ones. Medium and Hard mazes hold more, and rarer ones, including gold.</p>'; }
-    else { trophyIdx = (trophyIdx + tot.length) % tot.length; var k = tot[trophyIdx], f = C.finishOf(k); showTrophy(C.totemMesh(k), 1.5);
+    if (!tot.length) { showTrophy(null); h = '<h2>No totems yet</h2><p class="small">Totems are hidden in maze rooms. Easy mazes hold common ones. Medium and Hard mazes hold more, and rarer ones, including gemstones, gold and diamond.</p>'; }
+    else { trophyIdx = (trophyIdx + tot.length) % tot.length; var k = tot[trophyIdx], f = C.finishOf(k); showTrophy(C.totemMesh(k), 1.7);
       h = '<h2>' + esc(C.totemName(k)) + '</h2><p><span class="rar-' + f.rarity + '">' + C.RARITY[f.rarity] + '</span> <span class="small">\u00B7 found ' + d.totems[k] + (d.totems[k] === 1 ? ' time' : ' times') + ' \u00B7 ' + (trophyIdx + 1) + ' of ' + tot.length + '</span></p>'
         + '<p class="small">' + esc(C.totemDesc(k)) + '.</p><p class="small">' + tot.length + ' of ' + all + ' different totems found.</p><div class="row">' + nav(tot.length) + '<button type="button" class="primary" data-act="add"' + (canStack(k) ? '' : ' disabled') + '>Add to stack</button></div>'; }
   } else if (trophyTab === 'stack') {
-    showTrophy(d.stack.length ? C.stackMesh(d.stack) : null, 0.72);
+    showTrophy(d.stack.length ? C.stackMesh(d.stack) : null, 1.05);
     h = '<h2>Your totem stack</h2><p class="small">' + (d.stack.length ? 'Up to four totems, in any order. Top of the stack is listed first. Use Decorate in a maze to stand the stack on the table.' : 'Empty. Open Totems and choose Add to stack. Up to four, in any order.') + '</p><ul class="slots">';
     for (var i = d.stack.length - 1; i >= 0; i--) h += '<li><span>' + esc(C.totemName(d.stack[i])) + '</span><button type="button" data-act="up" data-i="' + i + '" aria-label="Move up"' + (i === d.stack.length - 1 ? ' disabled' : '') + '>\u2191</button><button type="button" data-act="down" data-i="' + i + '" aria-label="Move down"' + (i === 0 ? ' disabled' : '') + '>\u2193</button><button type="button" data-act="drop" data-i="' + i + '" aria-label="Remove">\u00D7</button></li>';
     h += '</ul>';

@@ -1,14 +1,14 @@
 /* Riddle Maze collectables: totems, table scenery and badges.
    Everything a player has found is kept on the device under one storage key. */
-window.CPCollect = function (THREE, woodTex) {
+window.CPCollect = function (THREE, woodTex, renderer) {
   'use strict';
   var KEY = 'cp-riddle-collection', H = 0.69; // every totem is the same height and the same core width
 
   /* ---------- What can be found ---------- */
-  var RARITY = ['Common', 'Uncommon', 'Rare', 'Golden'];
+  var RARITY = ['Common', 'Uncommon', 'Rare', 'Legendary'];
   // Designs and finishes come from the totem factory (totem-factory.js). Rarity is set here.
-  var factory = new TotemAssetFactory(THREE), SCALE = 0.6; H = factory.CORE_HEIGHT * SCALE;
-  var RARITY_OF = { wood: 0, stone: 0, bronze: 1, jade: 1, silver: 2, resin: 2, obsidian: 2, gold: 3 };
+  var factory = new TotemAssetFactory(THREE, renderer), SCALE = 0.36; H = factory.CORE_HEIGHT * SCALE;
+  var RARITY_OF = { wood: 0, stone: 0, bronze: 1, silver: 1, obsidian: 1, amethyst: 2, sapphire: 2, ruby: 2, emerald: 2, gold: 3, diamond: 3 };
   var FINISHES = TotemAssetFactory.FINISH_TIERS.map(function (f) { return { id: f.id, name: f.name, rarity: RARITY_OF[f.id] || 0 }; });
   var DESIGNS = TotemAssetFactory.TOTEM_TYPES.map(function (t) { return [t.id, t.name, t.desc]; });
   // chance of each rarity, per difficulty (percent): harder mazes hold rarer totems
@@ -104,11 +104,11 @@ window.CPCollect = function (THREE, woodTex) {
 
   /* ---------- Totems: built by TotemAssetFactory, scaled to suit the maze ----------
      The factory writes colours as they should look on screen; this renderer needs them converted once. */
-  Object.keys(factory.textures).forEach(function (k) { factory.textures[k].encoding = THREE.sRGBEncoding; });
+  ['wood', 'stone', 'water', 'tail'].forEach(function (k) { if (factory.textures[k]) factory.textures[k].encoding = THREE.sRGBEncoding; }); // colour textures only
   function tune(root) {
     root.traverse(function (o) {
       if (!o.isMesh) return; var m = o.material;
-      if (!m.userData.tuned && !m.isMeshBasicMaterial) { m.userData.tuned = true; if (m.color) m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear(); if (m.envMapIntensity !== undefined && !m.metalness) m.envMapIntensity = 0.4; }
+      if (!m.userData.tuned && !m.isMeshBasicMaterial) { m.userData.tuned = true; if (m.color) m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear(); }
       o.castShadow = o.receiveShadow = !m.transparent;
     });
   }
