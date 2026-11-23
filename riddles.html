@@ -107,11 +107,6 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 #trophy-card { max-height: 52%; }
 #trophy-card h2, #tray h2 { margin: 0 0 4px; font-family: var(--display); font-weight: 500; font-size: 15px; }
 #trophy-card p, #tray p { margin: 4px 0; }
-.rar-0 { color: var(--muted); } .rar-1 { color: var(--good); } .rar-2 { color: #8fb4ff; } .rar-3 { color: var(--amber); }
-.slots { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.slots li { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; background: var(--tile); border-radius: 10px; font-size: 14px; }
-.slots li span { flex: 1; min-width: 0; }
-.slots button { padding: 8px 11px; font-size: 13px; }
 .badges { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; }
 .badges li { padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); font-size: 12.5px; color: var(--muted); opacity: 0.55; }
 .badges li b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 2px; }
@@ -303,7 +298,6 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 
 <script src="three.min.js"></script>
 <script src="riddles-data.js"></script>
-<script src="totem-factory.js"></script>
 <script src="riddles-collect.js"></script>
 <script>
 (function () {
@@ -610,8 +604,8 @@ function buildToken(kind, matKind) {
   return g;
 }
 
-/* ---------- Collectables: totems, scenery, badges (see riddles-collect.js) ---------- */
-var C = window.CPCollect(THREE, woodTex, renderer);
+/* ---------- Collectables: scenery, badges (see riddles-collect.js) ---------- */
+var C = window.CPCollect(THREE, woodTex);
 var decorMode = false, decorPick = null, decorGroup = null, decorPicks = [], tableTop = null, tableMats = null, bsideNow = 0;
 var reviewing = false, reviewFloor = 0, trophyGroup = new THREE.Group(); scene.add(trophyGroup); trophyGroup.visible = false;
 function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tray'].forEach(function (id) { $(id).hidden = true; }); decorMode = false; }
@@ -677,7 +671,7 @@ function buildMaze() {
       var bit = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.04), km); bit.position.set(0.07, -0.2, 0); kg.add(bit);
       o.keyMesh = kg;
     }
-    if (r.find) { var fm = r.find.type === 'totem' ? C.totemMesh(r.find.key) : C.crateMesh(); fm.scale.setScalar(r.find.type === 'totem' ? 0.55 : 0.8); fm.position.set(0.68, 0.1, 0.68); detail.add(fm); o.findMesh = fm; }
+    if (r.find) { var fm = C.crateMesh(); fm.scale.setScalar(0.8); fm.position.set(0.68, 0.1, 0.68); detail.add(fm); o.findMesh = fm; }
     roomObjs.push(o);
   });
   maze.edges.forEach(function (e, i) {
@@ -739,10 +733,9 @@ function buildDecor() {
   if (decorGroup) mazeGroup.remove(decorGroup);
   decorGroup = new THREE.Group(); decorGroup.position.y = boardY - 0.2; mazeGroup.add(decorGroup); decorPicks = [];
   var d = C.data();
-  d.decor = d.decor.filter(function (it) { return it.id !== 'stack' || d.stack.length; });
   d.decor.forEach(function (it, i) {
-    var m = it.id === 'stack' ? C.stackMesh(d.stack) : C.sceneryMesh(it.id), e = ringEdges(it.a), r = e[0] + it.t * (e[1] - e[0]);
-    m.position.set(Math.sin(it.a) * r, 0, Math.cos(it.a) * r); m.rotation.y = it.r || 0; m.scale.setScalar(it.id === 'stack' ? 1.4 : 1.5);
+    var m = C.sceneryMesh(it.id), e = ringEdges(it.a), r = e[0] + it.t * (e[1] - e[0]);
+    m.position.set(Math.sin(it.a) * r, 0, Math.cos(it.a) * r); m.rotation.y = it.r || 0; m.scale.setScalar(1.5);
     m.traverse(function (o) { if (o.isMesh) { o.userData.decor = i; decorPicks.push(o); } }); decorGroup.add(m);
   });
   var cap = tableMats[0];
@@ -802,11 +795,8 @@ function enterRoom(i) {
       notes.push('<p class="cluebox">' + (T.label !== 'none' ? '<b>' + e.sym + '</b> ' : '') + esc(e.riddle.clue) + '</p>'); });
     if (fresh.length) notes.unshift('<p class="small">' + (T.label === 'none' ? 'A clue tablet. It does not say which door it belongs to.' : 'A clue tablet. Its mark matches a door somewhere in the maze.') + '</p>'); }
   if (r.key) { r.key = false; keys++; notes.push('<p>You found a <b>master key</b>. It opens one sealed door.</p>'); }
-  if (r.find) { var f = r.find, nm = f.type === 'totem' ? C.totemName(f.key) : C.sceneryName(f.id); r.find = null; stats.finds.push(nm);
-    var rar = f.type === 'totem' ? C.finishOf(f.key).rarity : 0, nb = C.collect(f);
-    notes.push(f.type === 'totem' ? '<p>You found a totem: <b>' + esc(nm) + '</b> <span class="rar-' + rar + '">(' + C.RARITY[rar] + ')</span>. It is now in your trophy room.</p>'
-      : '<p>You found scenery for the table: <b>' + esc(nm) + '</b>. Use Decorate to place it.</p>');
-    if (rar === 3) kickLamp(0.15);
+  if (r.find) { var f = r.find, nm = C.sceneryName(f.id), nb; r.find = null; stats.finds.push(nm); nb = C.collect(f);
+    notes.push('<p>You found scenery for the table: <b>' + esc(nm) + '</b>. Use Decorate to place it.</p>');
     nb.forEach(function (b) { stats.badges.push(b); notes.push(badgeNote(b)); }); }
   refresh();
   if (i === maze.exit) return finish(true);
@@ -989,11 +979,10 @@ function renderTray() {
     var b = document.createElement('button'); b.type = 'button'; b.textContent = g[1]; b.setAttribute('aria-pressed', String(d.ground === g[0]));
     b.onclick = function () { d.ground = g[0]; C.save(); buildDecor(); renderTray(); }; gb.appendChild(b); });
   var items = C.OBJECTS.filter(function (o) { return d.scenery[o[0]]; }).map(function (o) { return [o[0], o[1], d.scenery[o[0]] - placed(o[0])]; });
-  if (d.stack.length) items.push(['stack', 'Your totem stack', 1 - placed('stack')]);
   items.forEach(function (it) { var b = document.createElement('button'); b.type = 'button'; b.textContent = it[1] + ' \u00D7' + it[2]; b.disabled = it[2] < 1;
     b.setAttribute('aria-pressed', String(decorPick === it[0])); b.onclick = function () { decorPick = decorPick === it[0] ? null : it[0]; renderTray(); }; ib.appendChild(b); });
   if (decorPick && !items.some(function (it) { return it[0] === decorPick && it[2] > 0; })) decorPick = null;
-  $('tray-hint').textContent = !items.length ? 'No scenery yet. Crates of scenery turn up in maze rooms, and your totem stack can stand here once you build one in the trophy room.'
+  $('tray-hint').textContent = !items.length ? 'No scenery yet. Crates of scenery turn up in maze rooms.'
     : decorPick ? 'Tap the table around the maze to place it. Tap a placed piece to pick it back up.' : 'Choose a piece, then tap the table around the maze. Tap a placed piece to pick it back up.';
   $('tray-clear').disabled = !d.decor.length;
 }
@@ -1014,30 +1003,18 @@ $('tray-done').onclick = function () { decorMode = false; $('tray').hidden = tru
 $('tray-clear').onclick = function () { C.data().decor = []; C.save(); buildDecor(); renderTray(); };
 
 /* ---------- Trophy room ---------- */
-var trophyTab = 'totems', trophyIdx = 0, trophyMsg = '';
-function ownedTotems() { var d = C.data(); return Object.keys(d.totems).sort(function (a, b) { return C.finishOf(b).rarity - C.finishOf(a).rarity || (a < b ? -1 : 1); }); }
+var trophyTab = 'scenery', trophyIdx = 0;
 function ownedScenery() { var d = C.data(); return C.GROUNDS.concat(C.OBJECTS).map(function (x) { return x[0]; }).filter(function (id) { return d.scenery[id]; }); }
-function canStack(key) { var d = C.data(); return d.stack.length < 4 && d.stack.filter(function (k) { return k === key; }).length < d.totems[key]; }
 function showTrophy(mesh, scale) {
   clearGroup(trophyGroup); trophyGroup.userData.t = null; if (!mesh) return;
   var wide = canvas.clientWidth >= 820; mesh.scale.setScalar(scale * (wide ? 1.3 : 1)); trophyGroup.position.set(0, wide ? 0.6 : 0.2, 0); trophyGroup.add(mesh); trophyGroup.userData.t = mesh;
 }
 function renderTrophy() {
-  var d = C.data(), tot = ownedTotems(), sc = ownedScenery(), all = C.DESIGNS.length * C.FINISHES.length, card = $('trophy-card'), h = '';
-  var tabs = [['totems', 'Totems ' + tot.length], ['stack', 'Stack ' + d.stack.length + '/4'], ['scenery', 'Scenery ' + sc.length], ['badges', 'Badges ' + d.badges.length + '/' + C.BADGES.length]];
+  var d = C.data(), sc = ownedScenery(), card = $('trophy-card'), h = '';
+  var tabs = [['scenery', 'Scenery ' + sc.length], ['badges', 'Badges ' + d.badges.length + '/' + C.BADGES.length]];
   $('trophy-tabs').innerHTML = tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" aria-pressed="' + (trophyTab === t[0]) + '">' + t[1] + '</button>'; }).join('');
   var nav = function (n) { return n > 1 ? '<button type="button" data-act="prev" aria-label="Previous">\u2190</button><button type="button" data-act="next" aria-label="Next">\u2192</button>' : ''; };
-  if (trophyTab === 'totems') {
-    if (!tot.length) { showTrophy(null); h = '<h2>No totems yet</h2><p class="small">Totems are hidden in maze rooms. Easy mazes hold common ones. Medium and Hard mazes hold more, and rarer ones, including gemstones, gold and diamond.</p>'; }
-    else { trophyIdx = (trophyIdx + tot.length) % tot.length; var k = tot[trophyIdx], f = C.finishOf(k); showTrophy(C.totemMesh(k), 1.7);
-      h = '<h2>' + esc(C.totemName(k)) + '</h2><p><span class="rar-' + f.rarity + '">' + C.RARITY[f.rarity] + '</span> <span class="small">\u00B7 found ' + d.totems[k] + (d.totems[k] === 1 ? ' time' : ' times') + ' \u00B7 ' + (trophyIdx + 1) + ' of ' + tot.length + '</span></p>'
-        + '<p class="small">' + esc(C.totemDesc(k)) + '.</p><p class="small">' + tot.length + ' of ' + all + ' different totems found.</p><div class="row">' + nav(tot.length) + '<button type="button" class="primary" data-act="add"' + (canStack(k) ? '' : ' disabled') + '>Add to stack</button></div>'; }
-  } else if (trophyTab === 'stack') {
-    showTrophy(d.stack.length ? C.stackMesh(d.stack) : null, 1.05);
-    h = '<h2>Your totem stack</h2><p class="small">' + (d.stack.length ? 'Up to four totems, in any order. Top of the stack is listed first. Use Decorate in a maze to stand the stack on the table.' : 'Empty. Open Totems and choose Add to stack. Up to four, in any order.') + '</p><ul class="slots">';
-    for (var i = d.stack.length - 1; i >= 0; i--) h += '<li><span>' + esc(C.totemName(d.stack[i])) + '</span><button type="button" data-act="up" data-i="' + i + '" aria-label="Move up"' + (i === d.stack.length - 1 ? ' disabled' : '') + '>\u2191</button><button type="button" data-act="down" data-i="' + i + '" aria-label="Move down"' + (i === 0 ? ' disabled' : '') + '>\u2193</button><button type="button" data-act="drop" data-i="' + i + '" aria-label="Remove">\u00D7</button></li>';
-    h += '</ul>';
-  } else if (trophyTab === 'scenery') {
+  if (trophyTab === 'scenery') {
     if (!sc.length) { showTrophy(null); h = '<h2>No scenery yet</h2><p class="small">Crates in maze rooms hold scenery for the table: trees, stones, paths, ground covers and more.</p>'; }
     else { trophyIdx = (trophyIdx + sc.length) % sc.length; var id = sc[trophyIdx]; showTrophy(C.sceneryMesh(id), C.isGround(id) ? 1.6 : 1.2);
       h = '<h2>' + esc(C.sceneryName(id)) + '</h2><p class="small">' + (C.isGround(id) ? 'Ground cover for the whole table.' : 'You have ' + d.scenery[id] + '.') + ' \u00B7 ' + (trophyIdx + 1) + ' of ' + sc.length + '</p><p class="small">Place scenery with Decorate while you are in a maze.</p><div class="row">' + nav(sc.length) + '</div>'; }
@@ -1045,17 +1022,12 @@ function renderTrophy() {
     showTrophy(null);
     h = '<h2>Badges</h2><ul class="badges">' + C.BADGES.map(function (b) { return '<li' + (d.badges.indexOf(b[0]) >= 0 ? ' class="got"' : '') + '><b>' + b[1] + '</b>' + b[2] + '</li>'; }).join('') + '</ul>';
   }
-  card.innerHTML = h + (trophyMsg ? '<p class="cluebox">' + esc(trophyMsg) + '</p>' : ''); trophyMsg = '';
+  card.innerHTML = h;
 }
 $('trophy-tabs').onclick = function (ev) { var b = ev.target.closest('button'); if (!b) return; trophyTab = b.dataset.tab; trophyIdx = 0; renderTrophy(); };
 $('trophy-card').onclick = function (ev) {
-  var b = ev.target.closest('button'); if (!b || b.disabled) return; var d = C.data(), act = b.dataset.act, i = +b.dataset.i, t;
+  var b = ev.target.closest('button'); if (!b || b.disabled) return; var act = b.dataset.act;
   if (act === 'prev') trophyIdx--; else if (act === 'next') trophyIdx++;
-  else if (act === 'add') { var k = ownedTotems()[trophyIdx]; if (canStack(k)) { d.stack.push(k); trophyMsg = 'Added to the top of your stack (' + d.stack.length + ' of 4).'; } }
-  else if (act === 'up') { t = d.stack[i]; d.stack[i] = d.stack[i + 1]; d.stack[i + 1] = t; }
-  else if (act === 'down') { t = d.stack[i]; d.stack[i] = d.stack[i - 1]; d.stack[i - 1] = t; }
-  else if (act === 'drop') d.stack.splice(i, 1);
-  var nb = C.sweep([]); if (nb.length) trophyMsg = 'Badge earned: ' + C.badgeName(nb[0]) + '.';
   renderTrophy();
 };
 $('open-trophy').onclick = function () { hideAll(); over = true; $('app').dataset.screen = 'trophy'; pivot.visible = false; previewGroup.visible = false; trophyGroup.visible = true; trophyIdx = 0; renderTrophy(); };
@@ -1130,8 +1102,6 @@ function frame(now) {
   var spinner = (setupScreen ? previewGroup.userData.t : token); if (spinner && spinner.userData.spin) spinner.userData.spin.rotation.y += dt * (busy ? 3 : 0.6);
   roomObjs.forEach(function (o) { if (o.keyMesh) o.keyMesh.rotation.y += dt * 1.5; if (o.findMesh) o.findMesh.rotation.y += dt * 0.9; });
   if (trophyGroup.visible && trophyGroup.userData.t) trophyGroup.userData.t.rotation.y += dt * 0.6;
-  var secsNow = now / 1000, live = [trophyGroup.visible ? trophyGroup.userData.t : null].concat(pivot.visible && decorGroup ? decorGroup.children : [], pivot.visible ? roomObjs.map(function (o) { return o.findMesh; }) : []);
-  live.forEach(function (o) { if (o && o.userData.update) o.userData.update(secsNow); }); // totems with moving parts: water, flame, lighthouse
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
