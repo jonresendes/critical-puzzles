@@ -93,6 +93,12 @@ button.primary { background: var(--accent); color: #1b0b16; border-color: transp
 #end dl { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 10px 0; }
 #end dd { margin: 0; font-weight: 600; text-align: right; }
 
+/* ----- The riddle and the journal share a dock, so the journal sits below (or beside) the riddle instead of over it ----- */
+#dock { position: absolute; left: 12px; right: 12px; top: calc(64px + var(--safe-t)); margin: 0 auto; max-width: 480px; max-height: calc(100% - 90px);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 10px; z-index: 5; pointer-events: none; }
+#dock > .card { position: static; margin: 0; max-width: none; max-height: none; overflow: visible; flex: none; pointer-events: auto; }
+@media (min-width: 900px) { #dock.pair { max-width: 960px; flex-direction: row; align-items: flex-start; } #dock.pair > .card { flex: 1; min-width: 0; } }
+
 /* ----- Trophy room, decorating tray, maze review ----- */
 #app[data-screen="trophy"] #hud, #app[data-screen="trophy"] #status { display: none; }
 #app[data-screen="trophy"] #view { pointer-events: none; }
@@ -608,7 +614,23 @@ function buildToken(kind, matKind) {
 var C = window.CPCollect(THREE, woodTex);
 var decorMode = false, decorPick = null, decorGroup = null, decorPicks = [], tableTop = null, tableMats = null, bsideNow = 0;
 var reviewing = false, reviewFloor = 0, trophyGroup = new THREE.Group(); scene.add(trophyGroup); trophyGroup.visible = false;
-function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tray'].forEach(function (id) { $(id).hidden = true; }); decorMode = false; }
+function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tray'].forEach(function (id) { $(id).hidden = true; }); decorMode = false; syncDock(); }
+/* Text boxes: opening one closes the others. The one exception is the journal next to a riddle, which share the dock. */
+var dock = document.createElement('div'); dock.id = 'dock'; $('app').insertBefore(dock, $('panel')); dock.appendChild($('panel')); dock.appendChild($('journal'));
+var BOXES = ['panel', 'journal', 'note', 'review', 'tray', 'end'];
+function syncDock() { // also keeps every box clear of the review bar when that is showing
+  dock.classList.toggle('pair', !$('panel').hidden && !$('journal').hidden);
+  var bar = $('endbar'), top = bar.hidden ? '' : (bar.offsetTop + bar.offsetHeight + 8) + 'px';
+  [dock, $('note'), $('review')].forEach(function (el) { el.style.top = top; el.style.maxHeight = top ? 'calc(100% - ' + top + ' - 26px)' : ''; });
+}
+function show(id) {
+  BOXES.forEach(function (c) {
+    if (c === id || $(c).hidden) return;
+    if ((c === 'panel' && id === 'journal') || (c === 'journal' && id === 'panel')) return;
+    if (c === 'panel') closePanel(); else if (c === 'end') startReview(); else { if (c === 'tray') decorMode = false; $(c).hidden = true; }
+  });
+  $(id).hidden = false; syncDock();
+}
 function badgeNote(b) { return '<p class="cluebox"><b>Badge earned</b> ' + esc(C.badgeName(b)) + '</p>'; }
 
 /* ---------- Game state ---------- */
@@ -716,6 +738,7 @@ function buildMaze() {
   var legH = 9, stem = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.16, tableR * 0.26, legH, 24), walnut); stem.position.y = boardY - 0.8 - legH / 2; stem.userData.board = true; mazeGroup.add(stem);
   var foot = new THREE.Mesh(new THREE.CylinderGeometry(tableR * 0.5, tableR * 0.58, 0.7, 48), walnut); foot.position.y = boardY - 0.8 - legH - 0.35; foot.userData.board = true; mazeGroup.add(foot);
   mazeGroup.traverse(function (o) { if (!o.isMesh) return; o.receiveShadow = true; o.castShadow = !o.userData.board && !Array.isArray(o.material) && o.material.depthWrite !== false; });
+  top.castShadow = true; // the table top is solid: it blocks the lamp, so nothing below it is lit or carries the maze's shadow
   if (token) mazeGroup.remove(token);
   token = buildToken(setup.token, setup.tmat); token.scale.setScalar(1.15); mazeGroup.add(token);
   token.traverse(function (o) { if (o.isMesh && !o.material.transparent) { o.castShadow = true; o.receiveShadow = true; } });
@@ -801,7 +824,7 @@ function enterRoom(i) {
   refresh();
   if (i === maze.exit) return finish(true);
   if (T.oil && oil <= 0) return finish(false, 'Your lantern ran out of oil before you reached the exit.');
-  if (notes.length) { $('note-title').textContent = 'You found something'; $('note-body').innerHTML = notes.join(''); $('note').hidden = false; }
+  if (notes.length) { $('note-title').textContent = 'You found something'; $('note-body').innerHTML = notes.join(''); show('note'); }
   else if (first) say(T.oil ? 'Oil left: ' + oil + '. Tap a door to read its riddle.' : 'Tap a door to read its riddle.');
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -821,7 +844,14 @@ function tapRoom(i) {
   if (busy || over || !$('panel').hidden || i === cur) return;
   var steps = routeTo(i); if (!steps) return say('That room is behind a locked door.'); walk(steps);
 }
+function faceDoor(i) { // turn the token towards the door it is dealing with
+  var e = maze.edges[i], here = roomPos(maze.rooms[cur]), there = e.vertical ? edgeObjs[i].way[0] : roomPos(maze.rooms[e.a === cur ? e.b : e.a]);
+  var dx = there.x - here.x, dz = there.z - here.z; if (Math.abs(dx) + Math.abs(dz) < 0.01) return;
+  var from = token.rotation.y, turn = Math.atan2(dx, dz) - from; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+  tween(0.25, function (k) { token.rotation.y = from + turn * k; });
+}
 function openPanel(i) {
+  faceDoor(i);
   var e = maze.edges[i]; panelEdge = i; e.seen = true;
   var sealed = e.state === 'sealed';
   $('panel-title').textContent = sealed ? 'Sealed door' : 'Locked door' + (e.sym && T.label !== 'none' ? ' · ' + e.sym : '');
@@ -835,10 +865,10 @@ function openPanel(i) {
   $('answer').hidden = sealed; $('submit').hidden = sealed; $('answer').value = ''; $('feedback').textContent = '';
   $('use-key').hidden = !(sealed && keys > 0); $('panel-journal').hidden = !(T.label === 'none' && journal.length);
   $('tries').textContent = sealed ? (keys ? '' : 'You have no master key.') : T.attempts === Infinity ? 'Unlimited attempts.' : 'Attempts left: ' + (T.attempts - e.tries);
-  $('panel').hidden = false;
+  show('panel');
   if (!sealed) setTimeout(function () { try { $('answer').focus({ preventScroll: true }); } catch (x) {} }, 60);
 }
-function closePanel() { $('panel').hidden = true; panelEdge = -1; $('answer').blur(); }
+function closePanel() { $('panel').hidden = true; panelEdge = -1; $('answer').blur(); syncDock(); }
 function openDoor(i, viaKey) {
   var e = maze.edges[i], o = edgeObjs[i]; e.state = 'open'; stats.doors++;
   C.doorOpened(viaKey ? null : e.riddle.id).forEach(function (b) { stats.badges.push(b); });
@@ -884,7 +914,7 @@ function finish(won, why) {
     ['Time', Math.floor(secs / 60) + ':' + ('0' + secs % 60).slice(-2)]].map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
   if (won) C.runWon({ tier: maze.tier, wrong: stats.wrong, clues: stats.clues, stars: stars, secs: secs, oil: oil === Infinity ? 99 : oil }).forEach(function (b) { stats.badges.push(b); });
   $('end-finds').innerHTML = (stats.finds.length ? '<p class="small">Found this run: ' + stats.finds.map(esc).join('; ') + '.</p>' : '') + stats.badges.map(badgeNote).join('');
-  setTimeout(function () { if (over && !reviewing && $('app').dataset.screen === 'play') $('end').hidden = false; }, won ? 500 : 900);
+  setTimeout(function () { if (over && !reviewing && $('app').dataset.screen === 'play') show('end'); }, won ? 500 : 900);
 }
 
 /* ---------- After the run: collapse the results and look back over the maze ---------- */
@@ -893,7 +923,7 @@ function viewY() { return reviewing ? (reviewFloor - maze.cf) * FH : roomPos(maz
 function floorLabel() { var fl = floorsOf(); $('review-floor').hidden = fl.length < 2; $('review-floor').textContent = 'Floor ' + (fl.indexOf(reviewFloor) + 1) + ' of ' + fl.length; }
 function startReview() {
   if (!reviewing) { reviewing = true; reviewFloor = maze.rooms[cur].f; }
-  $('end').hidden = true; $('endbar').hidden = false; floorLabel(); refresh();
+  $('end').hidden = true; $('endbar').hidden = false; floorLabel(); refresh(); syncDock();
   say('Look around the maze you just played. Tap any door to see its riddle and clue.');
 }
 function reviewEntry(i) {
@@ -911,10 +941,10 @@ function showReview(list, title) {
   var read = list.filter(function (i) { return maze.edges[i].seen; }), unread = list.length - read.length;
   $('review-title').textContent = title;
   $('review-list').innerHTML = (list.length === 1 ? list : read).map(reviewEntry).join('') + (list.length > 1 && unread ? '<p class="small">' + unread + (unread === 1 ? ' door was' : ' doors were') + ' never read.</p>' : '');
-  $('review').hidden = false; $('review').scrollTop = 0;
+  show('review'); $('review').scrollTop = 0;
 }
 $('end-review').onclick = startReview;
-$('show-results').onclick = function () { $('endbar').hidden = true; $('review').hidden = true; $('end').hidden = false; };
+$('show-results').onclick = function () { $('endbar').hidden = true; show('end'); };
 $('open-review').onclick = function () { showReview(maze.edges.map(function (_, i) { return i; }), 'Riddles and clues'); };
 $('close-review').onclick = function () { $('review').hidden = true; };
 $('review-floor').onclick = function () { var fl = floorsOf(); reviewFloor = fl[(fl.indexOf(reviewFloor) + 1) % fl.length]; floorLabel(); refresh(); };
@@ -928,16 +958,16 @@ function newMaze(seed) {
   say('Drag to move around the table, pinch to zoom, two fingers to pan. Tap a glowing door to read its riddle. The gold room is the exit.');
 }
 window.__riddleMaze.state = function () { return { maze: maze, cur: cur, keys: keys, oil: oil, stats: stats, over: over, busy: busy, journal: journal }; };
-window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze; window.__riddleMaze.C = C;
+window.__riddleMaze.table = function () { return tableTop; }; window.__riddleMaze.tokenYaw = function () { return Math.atan2(Math.sin(token.rotation.y), Math.cos(token.rotation.y)); }; window.__riddleMaze.tapDoor = tapDoor; window.__riddleMaze.newMaze = newMaze; window.__riddleMaze.C = C;
 
 /* ---------- Journal and buttons ---------- */
 function showJournal() {
   $('journal-note').textContent = !journal.length ? 'No clues yet. Look for the green tablets.' : T.label === 'none' ? 'These clues are not labelled. Work out which door each one fits.' : 'Each clue carries the mark of its door.';
   $('journal-list').innerHTML = journal.map(function (j) { return '<li>' + (T.label !== 'none' ? '<b>' + j.sym + '</b>' : '') + esc(j.text) + '</li>'; }).join('');
-  $('journal').hidden = false;
+  show('journal'); if (!$('panel').hidden) $('journal').scrollIntoView({ block: 'nearest' });
 }
 $('open-journal').onclick = showJournal; $('panel-journal').onclick = showJournal;
-$('close-journal').onclick = function () { $('journal').hidden = true; };
+$('close-journal').onclick = function () { $('journal').hidden = true; syncDock(); };
 $('close-note').onclick = function () { $('note').hidden = true; say(T.oil ? 'Oil left: ' + oil + '.' : 'Tap a door to read its riddle.'); };
 $('walk-away').onclick = function () { closePanel(); say('You step back from the door.'); };
 $('answer-form').onsubmit = function (ev) { ev.preventDefault(); submit(); };
@@ -998,7 +1028,7 @@ function decorTap() {
   var nb = C.sweep([]); buildDecor(); renderTray(); say(nb.length ? 'Badge earned: ' + C.badgeName(nb[0]) + '.' : 'Placed.');
 }
 $('open-decor').onclick = function () { if (busy) return; if (decorMode) { decorMode = false; $('tray').hidden = true; return; }
-  closePanel(); $('journal').hidden = true; $('review').hidden = true; decorMode = true; decorPick = null; renderTray(); $('tray').hidden = false; };
+  decorMode = true; decorPick = null; renderTray(); show('tray'); decorMode = true; };
 $('tray-done').onclick = function () { decorMode = false; $('tray').hidden = true; };
 $('tray-clear').onclick = function () { C.data().decor = []; C.save(); buildDecor(); renderTray(); };
 

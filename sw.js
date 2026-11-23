@@ -1,9 +1,11 @@
 /* Critical Puzzles offline cache. Raise VERSION whenever the app files change. */
-var VERSION = 'critical-puzzles-v8';
+var VERSION = 'critical-puzzles-v9';
 var SHELL = ['./', 'index.html', 'riddles.html', 'riddles-data.js', 'riddles-collect.js', 'strongbox.html', 'strongbox-data.js', 'bugreport.js', 'html2canvas.min.js', 'three.min.js', 'manifest.webmanifest',
              'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+  // Fetch every file fresh from the server. Without this the browser can hand back a copy it saved a few
+  // minutes earlier, and the saved app ends up with files from two different versions that do not fit together.
+  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(SHELL.map(function (u) { return new Request(u, { cache: 'reload' }); })); }).then(function () { return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) {
