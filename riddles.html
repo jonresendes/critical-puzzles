@@ -618,7 +618,11 @@ function hideAll() { ['panel', 'journal', 'note', 'end', 'endbar', 'review', 'tr
 /* Text boxes: opening one closes the others. The one exception is the journal next to a riddle, which share the dock. */
 var dock = document.createElement('div'); dock.id = 'dock'; $('app').insertBefore(dock, $('panel')); dock.appendChild($('panel')); dock.appendChild($('journal'));
 var BOXES = ['panel', 'journal', 'note', 'review', 'tray', 'end'];
-function syncDock() { dock.classList.toggle('pair', !$('panel').hidden && !$('journal').hidden); }
+function syncDock() { // also keeps every box clear of the review bar when that is showing
+  dock.classList.toggle('pair', !$('panel').hidden && !$('journal').hidden);
+  var bar = $('endbar'), top = bar.hidden ? '' : (bar.offsetTop + bar.offsetHeight + 8) + 'px';
+  [dock, $('note'), $('review')].forEach(function (el) { el.style.top = top; el.style.maxHeight = top ? 'calc(100% - ' + top + ' - 26px)' : ''; });
+}
 function show(id) {
   BOXES.forEach(function (c) {
     if (c === id || $(c).hidden) return;
@@ -919,7 +923,7 @@ function viewY() { return reviewing ? (reviewFloor - maze.cf) * FH : roomPos(maz
 function floorLabel() { var fl = floorsOf(); $('review-floor').hidden = fl.length < 2; $('review-floor').textContent = 'Floor ' + (fl.indexOf(reviewFloor) + 1) + ' of ' + fl.length; }
 function startReview() {
   if (!reviewing) { reviewing = true; reviewFloor = maze.rooms[cur].f; }
-  $('end').hidden = true; $('endbar').hidden = false; floorLabel(); refresh();
+  $('end').hidden = true; $('endbar').hidden = false; floorLabel(); refresh(); syncDock();
   say('Look around the maze you just played. Tap any door to see its riddle and clue.');
 }
 function reviewEntry(i) {
