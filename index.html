@@ -116,6 +116,16 @@ a.game { text-decoration: none; line-height: 1.4; }
   flex: none; background: var(--accent); color: #1b0b16; border-radius: 10px; padding: 10px 14px; font-size: 13px;
 }
 .soon { margin: 0; color: var(--muted); font-size: 13px; }
+/* Eight games: a compact two-column shelf, so every game shows without scrolling and the cube keeps its space. */
+.games { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 560px; }
+.game { padding: 10px 11px; gap: 10px; border-radius: 14px; min-width: 0; }
+.game .mini { grid-template-columns: repeat(3, 10px); gap: 2px; }
+.game .mini i { width: 10px; height: 10px; border-radius: 3px; }
+.game .name { font-size: 12.5px; line-height: 1.2; overflow-wrap: anywhere; }
+.game .desc, .game .go { display: none; }
+#home { gap: 14px; }
+@media (max-height: 700px) { #home .lede { display: none; } .game { padding: 8px 10px; } }
+@media (min-width: 1100px) { .game { padding: 12px 14px; } .game .name { font-size: 14px; } .game .desc { display: block; font-size: 12px; } }
 @media (min-width: 820px) {
   #home { justify-content: center; padding-right: 52%; gap: 28px; }
 }
@@ -332,6 +342,76 @@ input[type="color"] {
           <span class="txt">
             <span class="name">Strongbox</span>
             <span class="desc">Words, numbers, logic and pieces to move. Every solve earns a clue to the code.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
+      <li>
+        <a class="game btn" id="open-screws" href="screws.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#8d96a8"></i><i style="--c:#ea4fae"></i><i style="--c:#8d96a8"></i>
+            <i style="--c:#3d8bff"></i><i style="--c:#8d96a8"></i><i style="--c:#f0b03a"></i>
+            <i style="--c:#8d96a8"></i><i style="--c:#19c2a8"></i><i style="--c:#8d96a8"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Loose Screws</span>
+            <span class="desc">Unscrew layered plates in the right order and sort the screws into their boxes before the spare tray fills.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
+      <li>
+        <a class="game btn" id="open-burr" href="burr.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#15131d"></i><i style="--c:#c7925a"></i><i style="--c:#15131d"></i>
+            <i style="--c:#8a5a34"></i><i style="--c:#e0bf8a"></i><i style="--c:#8a5a34"></i>
+            <i style="--c:#15131d"></i><i style="--c:#c7925a"></i><i style="--c:#15131d"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Burr Knot</span>
+            <span class="desc">Interlocking wooden pieces that only come apart in the right order. Slide one piece at a time.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
+      <li>
+        <a class="game btn" id="open-gridlock" href="gridlock.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#8d8f93"></i><i style="--c:#8d8f93"></i><i style="--c:#b9ab97"></i>
+            <i style="--c:#f0b03a"></i><i style="--c:#f0b03a"></i><i style="--c:#15131d"></i>
+            <i style="--c:#b9ab97"></i><i style="--c:#8d8f93"></i><i style="--c:#8d8f93"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Gridlock</span>
+            <span class="desc">Slide the blocks out of the way and take the gold key block out through the gate.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
+      <li>
+        <a class="game btn" id="open-marble" href="marble.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#bfe6f4"></i><i style="--c:#bfe6f4"></i><i style="--c:#5fd0a0"></i>
+            <i style="--c:#bfe6f4"></i><i style="--c:#15131d"></i><i style="--c:#bfe6f4"></i>
+            <i style="--c:#efecf7"></i><i style="--c:#bfe6f4"></i><i style="--c:#bfe6f4"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Marble Tilt</span>
+            <span class="desc">Tip the board to roll a marble through the maze to the cup, past the pits.</span>
+          </span>
+          <span class="go">Play</span>
+        </a>
+      </li>
+      <li>
+        <a class="game btn" id="open-boxfit" href="boxfit.html">
+          <span class="mini" aria-hidden="true">
+            <i style="--c:#ea4fae"></i><i style="--c:#ea4fae"></i><i style="--c:#1f7af0"></i>
+            <i style="--c:#12b8a6"></i><i style="--c:#ea4fae"></i><i style="--c:#1f7af0"></i>
+            <i style="--c:#12b8a6"></i><i style="--c:#f0b03a"></i><i style="--c:#f0b03a"></i>
+          </span>
+          <span class="txt">
+            <span class="name">Box Fit</span>
+            <span class="desc">Turn and stack odd pieces made of cubes until they fill the box exactly.</span>
           </span>
           <span class="go">Play</span>
         </a>
