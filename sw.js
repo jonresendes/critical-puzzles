@@ -1,6 +1,8 @@
 /* Critical Puzzles offline cache. Raise VERSION whenever the app files change. */
-var VERSION = 'critical-puzzles-v9';
-var SHELL = ['./', 'index.html', 'riddles.html', 'riddles-data.js', 'riddles-collect.js', 'strongbox.html', 'strongbox-data.js', 'bugreport.js', 'html2canvas.min.js', 'three.min.js', 'manifest.webmanifest',
+var VERSION = 'critical-puzzles-v10';
+var SHELL = ['./', 'index.html', 'riddles.html', 'riddles-data.js', 'riddles-collect.js', 'strongbox.html', 'strongbox-data.js',
+             'kit.js', 'kit.css', 'ambience.js', 'screws.html', 'screws.js', 'burr.html', 'burr.js', 'burr-data.js', 'gridlock.html', 'gridlock.js', 'gridlock-data.js', 'marble.html', 'marble.js', 'boxfit.html', 'boxfit.js',
+             'bugreport.js', 'html2canvas.min.js', 'three.min.js', 'manifest.webmanifest',
              'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', function (e) {
   // Fetch every file fresh from the server. Without this the browser can hand back a copy it saved a few
